@@ -282,9 +282,23 @@ namespace PdfiumViewer
 
         public IList<PdfRectangle> GetTextBounds(PdfTextSpan textSpan)
         {
+            var result = new List<PdfRectangle>();
+
             using (var pageData = new PageData(_document, _form, textSpan.Page))
+
             {
-                return GetTextBounds(pageData.TextPage, textSpan.Page, textSpan.Offset, textSpan.Length);
+                int rect_count = NativeMethods.FPDFText_CountRects(pageData.TextPage, textSpan.Offset, textSpan.Length);
+
+                for (int i = 0; i < rect_count; i++)
+                {
+                    NativeMethods.FPDFText_GetRect(pageData.TextPage, i, out var left, out var top, out var right, out var bottom);
+
+                    RectangleF bounds = new RectangleF((float)left, (float)top, (float)(right - left), (float)(bottom - top));
+
+                    result.Add(new PdfRectangle(textSpan.Page, bounds));
+                }
+
+                return result;
             }
         }
 
