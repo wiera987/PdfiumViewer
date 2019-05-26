@@ -172,6 +172,44 @@ namespace PdfiumViewer
             RedrawMarkers();
         }
 
+
+        /// <summary>
+        /// Converts client coordinates to PDF coordinates.
+        /// </summary>
+        /// <param name="location">Client coordinates to get the PDF location for.</param>
+        /// <returns>The location in a PDF page or the rounded location if not matching PDF page.</returns>
+        public PdfPoint PointToPdfRounded(Point location)
+        {
+            if (Document == null)
+                return PdfPoint.Empty;
+
+            var offset = GetScrollOffset();
+            location.Offset(-offset.Width, -offset.Height);
+
+            for (int page = 0; page < Document.PageSizes.Count; page++)
+            {
+                var pageCache = _pageCache[page];
+                if ((location.Y >= pageCache.OuterBounds.Top) &&
+                    (location.Y < pageCache.OuterBounds.Bottom))
+                {
+                    location.X = Math.Min(Math.Max(location.X, pageCache.Bounds.Left), pageCache.Bounds.Right);
+                    location.Y = Math.Min(Math.Max(location.Y, pageCache.Bounds.Top), pageCache.Bounds.Bottom);
+
+                    location = new Point(
+                        location.X - pageCache.Bounds.X,
+                        location.Y - pageCache.Bounds.Y
+                    );
+
+                    var translated = TranslatePointToPdf(pageCache.Bounds.Size, Document.PageSizes[page], location);
+                    translated = Document.PointToPdf(page, new Point((int)translated.X, (int)translated.Y));
+
+                    return new PdfPoint(page, translated);
+                }
+            }
+
+            return PdfPoint.Empty;
+        }
+
         /// <summary>
         /// Converts client coordinates to PDF coordinates.
         /// </summary>
@@ -882,36 +920,24 @@ namespace PdfiumViewer
         protected override void SetZoom(double zoom, Point? focus)
         {
             Point location;
+            PdfPoint pdfLocation;
+
+            var bounds = GetDocumentBounds();
 
             if (focus.HasValue)
             {
-                var bounds = GetDocumentBounds();
-
-                location = new Point(
-                    focus.Value.X - bounds.X,
-                    focus.Value.Y - bounds.Y
-                );
+                location = focus.Value;
             }
             else
             {
-                var bounds = _pageCacheValid
-                    ? _pageCache[Page].Bounds
-                    : GetDocumentBounds();
-
-                location = new Point(
-                    bounds.X,
-                    bounds.Y
-                );
+                location = new Point(0, 0);
             }
 
-            double oldScale = Zoom;
+            pdfLocation = PointToPdfRounded(location);
 
             base.SetZoom(zoom, null);
 
-            var newLocation = new Point(
-                (int)(location.X * (zoom / oldScale)),
-                (int)(location.Y * (zoom / oldScale))
-            );
+            var newLocation = PointFromPdf(pdfLocation);
 
             SetDisplayRectLocation(
                 new Point(
