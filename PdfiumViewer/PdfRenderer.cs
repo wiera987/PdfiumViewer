@@ -35,6 +35,7 @@ namespace PdfiumViewer
         private PdfRotation _rotation;
         private List<IPdfMarker>[] _markers;
         private PdfCursorMode _cursorMode = PdfCursorMode.Pan;
+        private bool _captureText = false;
         private bool _isSelectingText = false;
         private MouseState _cachedMouseState = null;
         private TextSelectionState _textSelectionState = null;
@@ -1072,12 +1073,12 @@ namespace PdfiumViewer
                     EndIndex = -1
                 };
                 _isSelectingText = true;
-                Capture = true;
+                _captureText = true;
             }
             else
             {
                 _isSelectingText = false;
-                Capture = false;
+                _captureText = false;
                 _textSelectionState = null;
             }
         }
@@ -1088,7 +1089,7 @@ namespace PdfiumViewer
                 return;
 
             _isSelectingText = false;
-            Capture = false;
+            _captureText = false;
             Invalidate();
         }
 

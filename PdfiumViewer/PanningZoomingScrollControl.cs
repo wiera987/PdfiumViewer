@@ -28,6 +28,7 @@ namespace PdfiumViewer
         }
 
         private double _zoom = 1;
+        private bool _capture = false;
         private bool _canPan;
         private Point _dragStart;
         private Point _startOffset;
@@ -246,7 +247,7 @@ namespace PdfiumViewer
             if (!MousePanningEnabled || e.Button != MouseButtons.Left || !_canPan)
                 return;
 
-            Capture = true;
+            _capture = true;
             _dragStart = e.Location;
             _startOffset = DisplayRectangle.Location;
         }
@@ -255,7 +256,7 @@ namespace PdfiumViewer
         {
             base.OnMouseMove(e);
 
-            if (!MousePanningEnabled || !Capture)
+            if (!_capture)
                 return;
 
             var offset = new Point(e.Location.X - _dragStart.X, e.Location.Y - _dragStart.Y);
@@ -267,8 +268,7 @@ namespace PdfiumViewer
         {
             base.OnMouseUp(e);
 
-            if (MousePanningEnabled)
-                Capture = false;
+            _capture = false;
         }
 
         private class WheelFilter : IMessageFilter
