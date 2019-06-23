@@ -278,12 +278,5 @@ namespace PdfiumViewer
         /// <param name="page">The page to get the character count from</param>
         /// <returns>Number of characters in the page. Generated characters, like additional space characters, new line characters, are also counted.</returns>
         int CountCharacters(int page);
-
-        /// <summary>
-        /// Gets the rectangular areas occupied by a segment of text
-        /// </summary>
-        /// <param name="page">The page to get the rectangles from</param>
-        /// <returns>The rectangular areas occupied by a segment of text</returns>
-        List<PdfRectangle> GetTextRectangles(int page, int startIndex, int count);
     }
 }

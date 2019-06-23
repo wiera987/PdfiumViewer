@@ -542,16 +542,6 @@ namespace PdfiumViewer
         }
 
         /// <summary>
-        /// Gets the rectangular areas occupied by a segment of text
-        /// </summary>
-        /// <param name="page">The page to get the rectangles from</param>
-        /// <returns>The rectangular areas occupied by a segment of text</returns>
-        public List<PdfRectangle> GetTextRectangles(int page, int startIndex, int count)
-        {
-            return _file.GetTextRectangles(page, startIndex, count);
-        }
-
-        /// <summary>
         /// Creates a <see cref="PrintDocument"/> for the PDF document.
         /// </summary>
         /// <returns></returns>

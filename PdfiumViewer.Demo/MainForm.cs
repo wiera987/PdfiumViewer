@@ -395,5 +395,10 @@ namespace PdfiumViewer.Demo
         {
             copyToolStripMenuItem.Enabled = pdfViewer1.Renderer.IsTextSelected;
         }
+
+        private void _textMode_Click(object sender, EventArgs e)
+        {
+            pdfViewer1.Renderer.CursorMode = (pdfViewer1.Renderer.CursorMode == PdfCursorMode.Pan) ? PdfCursorMode.TextSelection : PdfCursorMode.Pan;
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace PdfiumViewer
     /// </summary>
     public class PdfRenderer : PanningZoomingScrollControl
     {
+        private static readonly double _textTolerance = 8.0;
         private static readonly Padding PageMargin = new Padding(4);
         private static readonly SolidBrush _textSelectionBrush = new SolidBrush(Color.FromArgb(90, Color.DodgerBlue));
 
@@ -33,7 +34,7 @@ namespace PdfiumViewer
         private DragState _dragState;
         private PdfRotation _rotation;
         private List<IPdfMarker>[] _markers;
-        private PdfViewerCursorMode _cursorMode = PdfViewerCursorMode.Pan;
+        private PdfCursorMode _cursorMode = PdfCursorMode.Pan;
         private bool _isSelectingText = false;
         private MouseState _cachedMouseState = null;
         private TextSelectionState _textSelectionState = null;
@@ -140,14 +141,14 @@ namespace PdfiumViewer
         /// <summary>
         /// Gets or sets the way the viewer should respond to cursor input
         /// </summary>
-        [DefaultValue(PdfViewerCursorMode.Pan)]
-        public PdfViewerCursorMode CursorMode
+        [DefaultValue(PdfCursorMode.Pan)]
+        public PdfCursorMode CursorMode
         {
             get { return _cursorMode; }
             set
             {
                 _cursorMode = value;
-                MousePanningEnabled = _cursorMode == PdfViewerCursorMode.Pan;
+                MousePanningEnabled = _cursorMode == PdfCursorMode.Pan;
             }
         }
 
@@ -837,7 +838,9 @@ namespace PdfiumViewer
                     end = Document.CountCharacters(page);
 
                 Region region = null;
-                foreach (var rectangle in Document.GetTextRectangles(page, start, end - start))
+                PdfTextSpan textSpan = new PdfTextSpan(page, start, end - start);
+
+                foreach (var rectangle in Document.GetTextBounds(textSpan))
                 {
                     if (region == null)
                         region = new Region(BoundsFromPdf(rectangle));
@@ -927,7 +930,7 @@ namespace PdfiumViewer
                     }
                 }
 
-                if (_cursorMode == PdfViewerCursorMode.TextSelection)
+                if (_cursorMode == PdfCursorMode.TextSelection)
                 {
                     var state = GetMouseState(e.Location);
                     if (state.CharacterIndex >= 0)
@@ -949,7 +952,7 @@ namespace PdfiumViewer
 
             HandleMouseDownForLinks(e);
 
-            if (_cursorMode == PdfViewerCursorMode.TextSelection)
+            if (_cursorMode == PdfCursorMode.TextSelection)
             {
                 HandleMouseDownForTextSelection(e);
             }
@@ -963,7 +966,7 @@ namespace PdfiumViewer
 
             HandleMouseUpForLinks(e);
 
-            if (_cursorMode == PdfViewerCursorMode.TextSelection)
+            if (_cursorMode == PdfCursorMode.TextSelection)
             {
                 HandleMouseUpForTextSelection(e);
             }
@@ -973,7 +976,7 @@ namespace PdfiumViewer
         {
             base.OnMouseMove(e);
 
-            if (_cursorMode == PdfViewerCursorMode.TextSelection)
+            if (_cursorMode == PdfCursorMode.TextSelection)
             {
                 HandleMouseMoveForTextSelection(e);
             }
@@ -983,7 +986,7 @@ namespace PdfiumViewer
         {
             base.OnMouseDoubleClick(e);
 
-            if (_cursorMode == PdfViewerCursorMode.TextSelection)
+            if (_cursorMode == PdfCursorMode.TextSelection)
             {
                 HandleMouseDoubleClickForTextSelection(e);
             }
@@ -1057,7 +1060,7 @@ namespace PdfiumViewer
             if (!pdfLocation.IsValid)
                 return;
 
-            var characterIndex = Document.GetCharacterIndexAtPosition(pdfLocation, 4f, 4f);
+            var characterIndex = Document.GetCharacterIndexAtPosition(pdfLocation, _textTolerance, _textTolerance);
 
             if (characterIndex >= 0)
             {
@@ -1103,6 +1106,37 @@ namespace PdfiumViewer
 
                 Invalidate();
             }
+
+            ScrollWithMouseDrag(e);
+        }
+
+        private void ScrollWithMouseDrag(MouseEventArgs e)
+        {
+            var clientArea = GetScrollClientArea();
+            Point scroll = new Point(0, 0);
+
+            if (e.X < 0)
+            {
+                scroll.X = 0 - e.X;
+            }
+            else if (e.X > clientArea.Width)
+            {
+                scroll.X = clientArea.Width - e.X;
+            }
+
+            if (e.Y < 0)
+            {
+                scroll.Y = 0 - e.Y;
+            }
+            else if (e.Y > clientArea.Height)
+            {
+                scroll.Y = clientArea.Height - e.Y;
+            }
+
+            SetDisplayRectLocation(new Point(
+                DisplayRectangle.X + scroll.X,
+                DisplayRectangle.Y + scroll.Y
+            ));
         }
 
         private void HandleMouseDoubleClickForTextSelection(MouseEventArgs e)
@@ -1143,7 +1177,8 @@ namespace PdfiumViewer
             if (!_cachedMouseState.PdfLocation.IsValid)
                 return _cachedMouseState;
 
-            _cachedMouseState.CharacterIndex = Document.GetCharacterIndexAtPosition(_cachedMouseState.PdfLocation, 4f, 4f);
+            // Loosen the judgment of the Y coordinate while the mouse is moving.
+            _cachedMouseState.CharacterIndex = Document.GetCharacterIndexAtPosition(_cachedMouseState.PdfLocation, _textTolerance, _textTolerance*2);
 
             return _cachedMouseState;
         }

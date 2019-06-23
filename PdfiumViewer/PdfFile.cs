@@ -593,14 +593,6 @@ namespace PdfiumViewer
             }
         }
 
-        public List<PdfRectangle> GetTextRectangles(int page, int startIndex, int count)
-        {
-            var pageData = GetPageData(_document, _form, page);
-            {
-                return NativeMethods.FPDFText_GetRectangles(pageData.TextPage, page, startIndex, count);
-            }
-        }
-
         public void DeletePage(int pageNumber)
         {
             NativeMethods.FPDFPage_Delete(_document, pageNumber);

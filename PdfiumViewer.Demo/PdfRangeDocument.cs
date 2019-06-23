@@ -303,11 +303,6 @@ namespace PdfiumViewer.Demo
             return _document.CountCharacters(page);
         }
 
-        public List<PdfRectangle> GetTextRectangles(int page, int startIndex, int count)
-        {
-            return _document.GetTextRectangles(page, startIndex, count);
-        }
-
         private int TranslatePage(int page)
         {
             if (page < 0 || page >= PageCount)
