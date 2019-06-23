@@ -61,13 +61,13 @@ namespace PdfiumViewer
 
             var pageData = GetPageData(_document, _form, pageNumber);
             {
-                if (renderFormFill)
-                    flags &= ~NativeMethods.FPDF.ANNOT;
-
                 NativeMethods.FPDF_RenderPageBitmap(bitmapHandle, pageData.Page, boundsOriginX, boundsOriginY, boundsWidth, boundsHeight, rotate, flags);
 
                 if (renderFormFill)
+                {
+                    flags &= ~NativeMethods.FPDF.ANNOT;
                     NativeMethods.FPDF_FFLDraw(_form, bitmapHandle, pageData.Page, boundsOriginX, boundsOriginY, boundsWidth, boundsHeight, rotate, flags);
+                }
             }
 
             return true;
@@ -509,9 +509,96 @@ namespace PdfiumViewer
 
         private string GetPdfText(PageData pageData, PdfTextSpan textSpan)
         {
+            // NOTE: The count parameter in FPDFText_GetText seems to include the null terminator, even though the documentation does not specify this.
+            // So to read 40 characters, we need to allocate 82 bytes (2 for the terminator), and request 41 characters from GetText.
+            // The return value also includes the terminator (which is documented)
             var result = new byte[(textSpan.Length + 1) * 2];
-            NativeMethods.FPDFText_GetText(pageData.TextPage, textSpan.Offset, textSpan.Length, result);
-            return FPDFEncoding.GetString(result, 0, textSpan.Length * 2);
+            int count = NativeMethods.FPDFText_GetText(pageData.TextPage, textSpan.Offset, textSpan.Length + 1, result);
+            if (count <= 0)
+                return string.Empty;
+            return FPDFEncoding.GetString(result, 0, (count - 1) * 2);
+        }
+
+        public int GetCharIndexAtPos(PdfPoint location, double xTolerance, double yTolerance)
+        {
+            var pageData = GetPageData(_document, _form, location.Page);
+            {
+                return NativeMethods.FPDFText_GetCharIndexAtPos(
+                    pageData.TextPage,
+                    location.Location.X,
+                    location.Location.Y,
+                    xTolerance,
+                    yTolerance
+                );
+            }
+        }
+
+        public bool GetWordAtPosition(PdfPoint location, double xTolerance, double yTolerance, out PdfTextSpan span)
+        {
+            var index = GetCharIndexAtPos(location, xTolerance, yTolerance);
+            if (index < 0)
+            {
+                span = default(PdfTextSpan);
+                return false;
+            }
+
+            var baseCharacter = GetCharacter(location.Page, index);
+            if (IsWordSeparator(baseCharacter))
+            {
+                span = default(PdfTextSpan);
+                return false;
+            }
+
+            int start = index, end = index;
+
+            for (int i = index - 1; i >= 0; i--)
+            {
+                var c = GetCharacter(location.Page, i);
+                if (IsWordSeparator(c))
+                    break;
+                start = i;
+            }
+
+            var count = CountChars(location.Page);
+            for (int i = index + 1; i < count; i++)
+            {
+                var c = GetCharacter(location.Page, i);
+                if (IsWordSeparator(c))
+                    break;
+                end = i;
+            }
+
+            span = new PdfTextSpan(location.Page, start, end - start);
+            return true;
+
+            bool IsWordSeparator(char c)
+            {
+                return char.IsSeparator(c) || char.IsPunctuation(c) || char.IsControl(c) || char.IsWhiteSpace(c) || c == '\r' || c == '\n';
+            }
+        }
+
+        public char GetCharacter(int page, int index)
+        {
+            var pageData = GetPageData(_document, _form, page);
+            {
+                return NativeMethods.FPDFText_GetUnicode(pageData.TextPage, index);
+            }
+        }
+
+        public int CountChars(int page)
+        {
+            var pageData = GetPageData(_document, _form, page);
+            {
+                return NativeMethods.FPDFText_CountChars(pageData.TextPage);
+            }
+        }
+
+        public List<PdfRectangle> GetTextRectangles(int page, int startIndex, int count)
+        {
+            var pageData = GetPageData(_document, _form, page);
+            {
+                return NativeMethods.FPDFText_GetRectangles(pageData.TextPage, page, startIndex, count);
+            }
         }
 
         public void DeletePage(int pageNumber)
