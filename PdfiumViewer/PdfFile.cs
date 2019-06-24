@@ -509,14 +509,9 @@ namespace PdfiumViewer
 
         private string GetPdfText(PageData pageData, PdfTextSpan textSpan)
         {
-            // NOTE: The count parameter in FPDFText_GetText seems to include the null terminator, even though the documentation does not specify this.
-            // So to read 40 characters, we need to allocate 82 bytes (2 for the terminator), and request 41 characters from GetText.
-            // The return value also includes the terminator (which is documented)
             var result = new byte[(textSpan.Length + 1) * 2];
-            int count = NativeMethods.FPDFText_GetText(pageData.TextPage, textSpan.Offset, textSpan.Length + 1, result);
-            if (count <= 0)
-                return string.Empty;
-            return FPDFEncoding.GetString(result, 0, (count - 1) * 2);
+            NativeMethods.FPDFText_GetText(pageData.TextPage, textSpan.Offset, textSpan.Length, result);
+            return FPDFEncoding.GetString(result, 0, textSpan.Length * 2);
         }
 
         public int GetCharIndexAtPos(PdfPoint location, double xTolerance, double yTolerance)

@@ -13,7 +13,8 @@ namespace PdfiumViewer
     /// </summary>
     public class PdfRenderer : PanningZoomingScrollControl
     {
-        private static readonly double _textTolerance = 8.0;
+        private static readonly double _textToleranceX = 0.0;
+        private static readonly double _textToleranceY = 8.0;
         private static readonly Padding PageMargin = new Padding(4);
         private static readonly SolidBrush _textSelectionBrush = new SolidBrush(Color.FromArgb(90, Color.DodgerBlue));
 
@@ -35,7 +36,6 @@ namespace PdfiumViewer
         private PdfRotation _rotation;
         private List<IPdfMarker>[] _markers;
         private PdfCursorMode _cursorMode = PdfCursorMode.Pan;
-        private bool _captureText = false;
         private bool _isSelectingText = false;
         private MouseState _cachedMouseState = null;
         private TextSelectionState _textSelectionState = null;
@@ -1061,7 +1061,7 @@ namespace PdfiumViewer
             if (!pdfLocation.IsValid)
                 return;
 
-            var characterIndex = Document.GetCharacterIndexAtPosition(pdfLocation, _textTolerance, _textTolerance);
+            var characterIndex = Document.GetCharacterIndexAtPosition(pdfLocation, _textToleranceX, _textToleranceY);
 
             if (characterIndex >= 0)
             {
@@ -1073,12 +1073,10 @@ namespace PdfiumViewer
                     EndIndex = -1
                 };
                 _isSelectingText = true;
-                _captureText = true;
             }
             else
             {
                 _isSelectingText = false;
-                _captureText = false;
                 _textSelectionState = null;
             }
         }
@@ -1089,7 +1087,6 @@ namespace PdfiumViewer
                 return;
 
             _isSelectingText = false;
-            _captureText = false;
             Invalidate();
         }
 
@@ -1179,7 +1176,7 @@ namespace PdfiumViewer
                 return _cachedMouseState;
 
             // Loosen the judgment of the Y coordinate while the mouse is moving.
-            _cachedMouseState.CharacterIndex = Document.GetCharacterIndexAtPosition(_cachedMouseState.PdfLocation, _textTolerance, _textTolerance*2);
+            _cachedMouseState.CharacterIndex = Document.GetCharacterIndexAtPosition(_cachedMouseState.PdfLocation, _textToleranceX, _textToleranceY);
 
             return _cachedMouseState;
         }
