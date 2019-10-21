@@ -100,7 +100,7 @@ namespace PdfiumViewer
         /// <returns>Whether any matches were found.</returns>
         public bool Search(string text)
         {
-            Renderer.Markers.Clear();
+            Renderer.Markers.Clear(0);
 
             if (String.IsNullOrEmpty(text))
             {
@@ -206,7 +206,7 @@ namespace PdfiumViewer
 
         private void UpdateHighlights()
         {
-            Renderer.Markers.Clear();
+            Renderer.Markers.Clear(0);
 
             if (_matches == null)
                 return;
@@ -240,7 +240,8 @@ namespace PdfiumViewer
                     bounds,
                     current ? CurrentMatchColor : MatchColor,
                     current ? CurrentMatchBorderColor : MatchBorderColor,
-                    current ? CurrentMatchBorderWidth : MatchBorderWidth
+                    current ? CurrentMatchBorderWidth : MatchBorderWidth,
+                    0
                 );
 
                 Renderer.Markers.Add(marker);

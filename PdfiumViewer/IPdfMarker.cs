@@ -16,6 +16,11 @@ namespace PdfiumViewer
         int Page { get; }
 
         /// <summary>
+        /// The marker Tag by purpose.
+        /// </summary>
+        int Tag { get; }
+
+        /// <summary>
         /// Draw the marker.
         /// </summary>
         /// <param name="renderer">The PdfRenderer to draw the marker with.</param>

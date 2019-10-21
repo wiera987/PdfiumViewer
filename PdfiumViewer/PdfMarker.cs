@@ -15,18 +15,21 @@ namespace PdfiumViewer
         public Color BorderColor { get; }
         public float BorderWidth { get; }
 
+        public int Tag { get; }
+
         public PdfMarker(int page, RectangleF bounds, Color color)
-            : this(page, bounds, color, Color.Transparent, 0)
+            : this(page, bounds, color, Color.Transparent, 0, 0)
         {
         }
 
-        public PdfMarker(int page, RectangleF bounds, Color color, Color borderColor, float borderWidth)
+        public PdfMarker(int page, RectangleF bounds, Color color, Color borderColor, float borderWidth, int tag)
         {
             Page = page;
             Bounds = bounds;
             Color = color;
             BorderColor = borderColor;
             BorderWidth = borderWidth;
+            Tag = tag;
         }
 
         public void Draw(PdfRenderer renderer, Graphics graphics)

@@ -11,6 +11,21 @@ namespace PdfiumViewer
     {
         public event EventHandler CollectionChanged;
 
+        /// <summary>
+        /// Clear specified tag.
+        /// </summary>
+        /// <param name="tag"></param>
+        public void Clear(int tag)
+        {
+            for (int i=Count-1; i>=0; i--)
+            {
+                if (Items[i].Tag == tag)
+                {
+                    RemoveAt(i);
+                }
+            }
+        }
+
         protected override void ClearItems()
         {
             base.ClearItems();
