@@ -280,15 +280,9 @@ namespace PdfiumViewer.Demo
 
         private void deleteCurrentPageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // PdfRenderer does not support changes to the loaded document,
-            // so we fake it by reloading the document into the renderer.
-
             int page = pdfViewer1.Renderer.Page;
-            var document = pdfViewer1.Document;
-            pdfViewer1.Document = null;
-            document.DeletePage(page);
-            pdfViewer1.Document = document;
-            pdfViewer1.Renderer.Page = page;
+            pdfViewer1.Document.DeletePage(page);
+            pdfViewer1.Renderer.ReloadDocument();
         }
 
         private void rotate0ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -313,15 +307,9 @@ namespace PdfiumViewer.Demo
 
         private void Rotate(PdfRotation rotate)
         {
-            // PdfRenderer does not support changes to the loaded document,
-            // so we fake it by reloading the document into the renderer.
-
             int page = pdfViewer1.Renderer.Page;
-            var document = pdfViewer1.Document;
-            pdfViewer1.Document = null;
-            document.RotatePage(page, rotate);
-            pdfViewer1.Document = document;
-            pdfViewer1.Renderer.Page = page;
+            pdfViewer1.Document.RotatePage(page, rotate);
+            pdfViewer1.Renderer.ReloadDocument();
         }
 
         private void showRangeOfPagesToolStripMenuItem_Click(object sender, EventArgs e)

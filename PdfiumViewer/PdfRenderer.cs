@@ -720,7 +720,7 @@ namespace PdfiumViewer
             ReloadDocument();
         }
 
-        private void ReloadDocument()
+        public void ReloadDocument()
         {
             ResetRenderer();
 

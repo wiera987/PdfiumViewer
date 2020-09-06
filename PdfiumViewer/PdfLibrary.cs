@@ -23,7 +23,12 @@ namespace PdfiumViewer
 
         private PdfLibrary()
         {
-            NativeMethods.FPDF_AddRef();
+            try
+            {
+                NativeMethods.FPDF_InitEmbeddedLibraries();
+            }
+            catch { }
+            NativeMethods.FPDF_InitLibrary();
         }
 
         ~PdfLibrary()
@@ -42,7 +47,7 @@ namespace PdfiumViewer
         {
             if (!_disposed)
             {
-                NativeMethods.FPDF_Release();
+                NativeMethods.FPDF_DestroyLibrary();
 
                 _disposed = true;
             }

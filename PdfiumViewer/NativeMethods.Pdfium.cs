@@ -19,19 +19,27 @@ namespace PdfiumViewer
         // threads, even when there are multiple AppDomain's in play.
         private static readonly string LockString = String.Intern("e362349b-001d-4cb2-bf55-a71606a3e36f");
 
-        public static void FPDF_AddRef()
+        public static void FPDF_InitLibrary()
         {
             lock (LockString)
             {
-                Imports.FPDF_AddRef();
+                Imports.FPDF_InitLibrary();
             }
         }
 
-        public static void FPDF_Release()
+        public static void FPDF_InitEmbeddedLibraries()
         {
             lock (LockString)
             {
-                Imports.FPDF_Release();
+                Imports.FPDF_InitEmbeddedLibraries();
+            }
+        }
+
+        public static void FPDF_DestroyLibrary()
+        {
+            lock (LockString)
+            {
+                Imports.FPDF_DestroyLibrary();
             }
         }
 
@@ -393,11 +401,11 @@ namespace PdfiumViewer
             }
         }
 
-        public static uint FPDFDest_GetPageIndex(IntPtr document, IntPtr dest)
+        public static uint FPDFDest_GetDestPageIndex(IntPtr document, IntPtr dest)
         {
             lock (LockString)
             {
-                return Imports.FPDFDest_GetPageIndex(document, dest);
+                return Imports.FPDFDest_GetDestPageIndex(document, dest);
             }
         }
 
@@ -519,6 +527,14 @@ namespace PdfiumViewer
         }
 
         #region Save / Edit Methods
+
+        public static PdfRotation FPDFPage_GetRotation(IntPtr page)
+        {
+            lock (LockString)
+            {
+                return (PdfRotation)Imports.FPDFPage_GetRotation(page);
+            }
+        }
 
         public static void FPDFPage_SetRotation(IntPtr page, PdfRotation rotation)
         {
@@ -655,10 +671,13 @@ namespace PdfiumViewer
         private static class Imports
         {
             [DllImport("pdfium.dll")]
-            public static extern void FPDF_AddRef();
+            public static extern void FPDF_InitLibrary();
 
             [DllImport("pdfium.dll")]
-            public static extern void FPDF_Release();
+            public static extern void FPDF_InitEmbeddedLibraries();
+
+            [DllImport("pdfium.dll")]
+            public static extern void FPDF_DestroyLibrary();
 
             [DllImport("pdfium.dll", CharSet = CharSet.Ansi)]            
             public static extern IntPtr FPDF_LoadCustomDocument([MarshalAs(UnmanagedType.LPStruct)]FPDF_FILEACCESS access, string password);
@@ -787,7 +806,7 @@ namespace PdfiumViewer
             public static extern IntPtr FPDFLink_GetDest(IntPtr document, IntPtr link);
 
             [DllImport("pdfium.dll")]
-            public static extern uint FPDFDest_GetPageIndex(IntPtr document, IntPtr dest);
+            public static extern uint FPDFDest_GetDestPageIndex(IntPtr document, IntPtr dest);
 
             [DllImport("pdfium.dll")]
             public static extern bool FPDFLink_GetAnnotRect(IntPtr linkAnnot, FS_RECTF rect);
