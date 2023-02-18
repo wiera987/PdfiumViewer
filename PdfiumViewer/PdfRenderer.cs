@@ -39,6 +39,7 @@ namespace PdfiumViewer
         private bool _isSelectingText = false;
         private MouseState _cachedMouseState = null;
         private TextSelectionState _textSelectionState = null;
+        private RectangleF _compareBounds = Rectangle.Empty;
 
         /// <summary>
         /// The associated PDF document.
@@ -150,6 +151,31 @@ namespace PdfiumViewer
             {
                 _cursorMode = value;
                 MousePanningEnabled = _cursorMode == PdfCursorMode.Pan;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the Boundary for comparison
+        /// </summary>
+        public RectangleF CompareBounds
+        {
+            get { return _compareBounds; }
+            set
+            {
+                if (value.Width < 0)
+                {
+                    value.X += value.Width;
+                    value.Width = -value.Width;
+                }
+                if (value.Height < 0)
+                {
+                    value.Y += value.Height;
+                    value.Height = -value.Height;
+                }
+
+                Debug.Assert(value.Width >= 0 && value.Height >= 0);
+                _compareBounds = value;
+                Invalidate();
             }
         }
 
@@ -809,6 +835,8 @@ namespace PdfiumViewer
 
                     DrawMarkers(e.Graphics, page);
 
+                    DrawCompareBounds(e.Graphics, page);
+
                     var selectionInfo = _textSelectionState;
                     if (selectionInfo != null)
                         DrawTextSelection(e.Graphics, page, selectionInfo.GetNormalized());
@@ -819,6 +847,19 @@ namespace PdfiumViewer
                 _visiblePageStart = 0;
             if (_visiblePageEnd == -1)
                 _visiblePageEnd = Document.PageCount - 1;
+        }
+
+        private void DrawCompareBounds(Graphics graphics, int page)
+        {
+           var bounds = BoundsFromPdf(new PdfRectangle(page, _compareBounds));
+
+            if (!bounds.IsEmpty)
+            {
+                using (var pen = new Pen(Color.Crimson, 2))
+                {
+                    graphics.DrawRectangle(pen, bounds);
+                }
+            }
         }
 
         private void DrawTextSelection(Graphics graphics, int page, TextSelectionState state)
@@ -939,6 +980,12 @@ namespace PdfiumViewer
                         e.Cursor = Cursors.IBeam;
                         return;
                     }
+                }
+
+                if (_cursorMode == PdfCursorMode.Bounds)
+                {
+                    e.Cursor = Cursors.Cross;
+                    return;
                 }
             }
 
