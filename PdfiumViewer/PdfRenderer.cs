@@ -1306,7 +1306,11 @@ namespace PdfiumViewer
             }
             else
             {
-                location = new Point(0, 0);
+            	// Zoom the center of the page.
+                var pageCache = _pageCache[Page];
+                int x = pageCache.OuterBounds.X + pageCache.OuterBounds.Width / 2;
+                int y = pageCache.OuterBounds.Y + pageCache.OuterBounds.Height / 2;
+                location = new Point(x,y);
             }
 
             pdfLocation = PointToPdfRounded(location);
