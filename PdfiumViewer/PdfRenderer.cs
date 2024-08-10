@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Security.Policy;
 using System.Text;
 using System.Windows.Forms;
 
@@ -110,6 +112,66 @@ namespace PdfiumViewer
 
                     SetDisplayRectLocation(new Point(0, -_pageCache[page].OuterBounds.Top));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the currently comparison page.
+        /// </summary>
+        public int ComparisonPage
+        {
+            get
+            {
+                if (Document == null || !_pageCacheValid)
+                    return 0;
+
+                var clientArea = GetScrollClientArea();
+                int top = -DisplayRectangle.Top;
+                int bottom = top + clientArea.Height;
+
+                for (int page = 0; page < Document.PageSizes.Count; page++)
+                {
+                    var pageCache = _pageCache[page].OuterBounds;
+                    if (top >= pageCache.Top || top < pageCache.Bottom)
+                    {
+                        float dispPageHeight = Math.Min(bottom, pageCache.Bottom) - top;
+                        float dispOccupancy = dispPageHeight / (bottom - top);
+                        float pageDispRatio = dispPageHeight / pageCache.Height;
+
+                        //Debug.Print("Page:{0}, pageCache:{1}, _compareBounds:{2}", page, pageCache, _compareBounds);
+
+                        // If this page occupies more than 50% of the screen.
+                        if (dispOccupancy >= 0.5)
+                        {
+                            return page;
+                        }
+                        // If more than 50% of this page is displayed.
+                        if (pageDispRatio >= 0.5)
+                        {
+                            return page;
+                        }
+
+                        // When multiple pages are displayed,
+                        // if an earlier page is small but has a visible bounds rectangle
+                        // and a later page is large but has no visible bounds rectangle,
+                        // the earlier page is set as the comparison page.
+                        if (!_compareBounds.IsEmpty)
+                        {
+                            if ((dispOccupancy > 0) && (page + 1 < Document.PageSizes.Count))
+                            {
+                                // The calculation of whether the bounds rectangle is displayed follows OnPaint().
+                                var bounds = BoundsFromPdf(new PdfRectangle(page + 1, _compareBounds));
+                                if (clientArea.Bottom < bounds.Top)
+                                {
+                                    return page;
+                                }
+                            }
+
+                        }
+                    }
+                }
+
+                return Document.PageCount - 1;
             }
         }
 
