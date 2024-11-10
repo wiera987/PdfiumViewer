@@ -351,8 +351,9 @@ namespace PdfiumViewer
             for (int page = 0; page < Document.PageSizes.Count; page++)
             {
                 var pageCache = _pageCache[page];
-                if ((location.Y >= pageCache.OuterBounds.Top) &&
-                    (location.Y < pageCache.OuterBounds.Bottom))
+                if (((location.Y >= pageCache.OuterBounds.Top) &&
+                    (location.Y < pageCache.OuterBounds.Bottom)) ||
+                    (page == Document.PageSizes.Count-1))
                 {
                     location.X = Math.Min(Math.Max(location.X, pageCache.Bounds.Left), pageCache.Bounds.Right);
                     location.Y = Math.Min(Math.Max(location.Y, pageCache.Bounds.Top), pageCache.Bounds.Bottom);
@@ -1364,15 +1365,16 @@ namespace PdfiumViewer
 
             if (focus.HasValue)
             {
+                // Zoom into the focus.
                 location = focus.Value;
             }
             else
             {
-            	// Zoom the center of the page.
-                var pageCache = _pageCache[Page];
-                int x = pageCache.OuterBounds.X + pageCache.OuterBounds.Width / 2;
-                int y = pageCache.OuterBounds.Y + pageCache.OuterBounds.Height / 2;
-                location = new Point(x,y);
+                // Zoom the center of the pane.
+                var x = ClientRectangle.Width/2;
+                var y = ClientRectangle.Height / 2;
+                
+                location = new Point(x, y);
             }
 
             pdfLocation = PointToPdfRounded(location);
