@@ -1364,15 +1364,16 @@ namespace PdfiumViewer
 
             if (focus.HasValue)
             {
+                // Zoom into the focus.
                 location = focus.Value;
             }
             else
             {
-            	// Zoom the center of the page.
-                var pageCache = _pageCache[Page];
-                int x = pageCache.OuterBounds.X + pageCache.OuterBounds.Width / 2;
-                int y = pageCache.OuterBounds.Y + pageCache.OuterBounds.Height / 2;
-                location = new Point(x,y);
+                // Zoom the center of the pane.
+                var x = ClientRectangle.Width/2;
+                var y = ClientRectangle.Height / 2;
+                
+                location = new Point(x, y);
             }
 
             pdfLocation = PointToPdfRounded(location);
