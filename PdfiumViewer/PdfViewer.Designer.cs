@@ -118,10 +118,15 @@ namespace PdfiumViewer
             this._bookmarks.FullRowSelect = true;
             this._bookmarks.Name = "_bookmarks";
             this._bookmarks.ShowLines = false;
+            this._bookmarks.BeforeCollapse += new System.Windows.Forms.TreeViewCancelEventHandler(this._bookmarks_BeforeCollapse);
+            this._bookmarks.AfterCollapse += new System.Windows.Forms.TreeViewEventHandler(this._bookmarks_AfterCollapse);
+            this._bookmarks.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this._bookmarks_BeforeExpand);
+            this._bookmarks.AfterExpand += new System.Windows.Forms.TreeViewEventHandler(this._bookmarks_AfterExpand);
             this._bookmarks.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this._bookmarks_AfterSelect);
             // 
             // _renderer
             // 
+            this._renderer.CompareBounds = ((System.Drawing.RectangleF)(resources.GetObject("_renderer.CompareBounds")));
             this._renderer.Cursor = System.Windows.Forms.Cursors.Default;
             resources.ApplyResources(this._renderer, "_renderer");
             this._renderer.Name = "_renderer";

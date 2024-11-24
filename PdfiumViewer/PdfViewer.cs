@@ -13,6 +13,8 @@ namespace PdfiumViewer
     {
         private IPdfDocument _document;
         private bool _showBookmarks;
+        private bool preventPageRefresh;
+        private int bookmarkPage;
 
         /// <summary>
         /// Gets or sets the PDF document.
@@ -30,7 +32,7 @@ namespace PdfiumViewer
                     if (_document != null)
                     {
                         _renderer.Load(_document);
-                        UpdateBookmarks();
+                        UpdateBookmarks(true);
                     }
 
                     UpdateEnabled();
@@ -117,7 +119,7 @@ namespace PdfiumViewer
                 handler(this, e);
         }
 
-        private void UpdateBookmarks()
+        private void UpdateBookmarks(bool construct = false)
         {
             bool visible = _showBookmarks && _document != null && _document.Bookmarks.Count > 0;
 
@@ -127,11 +129,79 @@ namespace PdfiumViewer
             {
                 _container.Panel1Collapsed = false;
 
-                _bookmarks.Nodes.Clear();
-                foreach (var bookmark in _document.Bookmarks)
-                    _bookmarks.Nodes.Add(GetBookmarkNode(bookmark));
+                if ((_bookmarks.Nodes.Count == 0) || (construct))
+                {
+                    _bookmarks.Nodes.Clear();
+                    foreach (var bookmark in _document.Bookmarks)
+                    {
+                        _bookmarks.Nodes.Add(GetBookmarkNode(bookmark));
+                    }
+                }
+
+                // Select a bookmark for the renderer page.
+                bookmarkPage = -1;
+                SelectBookmarkForPage(_renderer.Page);
             }
         }
+
+        /// <summary>
+        /// Select a bookmark for a specified page.
+        /// </summary>
+        public void SelectBookmarkForPage(int page)
+        {
+            TreeNode validNode = null;
+            int bmpage = bookmarkPage;
+
+            if (page != bookmarkPage)
+            {
+                GetNodeForPage(page, _bookmarks.Nodes, ref validNode);
+
+                // Select the last valid Node.
+                if (validNode != null)
+                {
+                    preventPageRefresh = true;
+                    _bookmarks.SelectedNode = validNode;
+                    preventPageRefresh = false;
+                    bookmarkPage = page;
+                }
+            }
+            //Console.WriteLine("SelectBookmarkForPage: Page={0}!={1}, Text={2}", page, bmpage, validNode?.Text);
+        }
+
+        /// <summary>
+        /// Recursively search for the node that corresponds to the page from Nodes.
+        /// </summary>
+        /// <param name="page">The page being selected.</param>
+        /// <param name="nodes">Bookmark Nodes being searched recursively</param>
+        /// <param name="validNode">Currently active Node</param>
+        private void GetNodeForPage(int page, TreeNodeCollection nodes, ref TreeNode validNode)
+        {
+            int validPage = -1;
+
+            foreach (TreeNode node in nodes)
+            {
+                PdfBookmark bookmark = (PdfBookmark)node.Tag;
+
+                if (bookmark.PageIndex <= page)
+                {
+                    // The last updated node is valid.
+                    // However, if they are on the same page, select the node found first.
+                    // Prefer child node over parent node.
+                    if (bookmark.PageIndex != validPage)
+                    {
+                        validNode = node;
+                        validPage = bookmark.PageIndex;
+                    }
+                }
+
+                // If the tree is expanded, explore further
+                if (node.IsExpanded)
+                {
+                    GetNodeForPage(page, node.Nodes, ref validNode);
+                }
+            }
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the PdfViewer class.
@@ -144,6 +214,10 @@ namespace PdfiumViewer
 
             ShowToolbar = true;
             ShowBookmarks = true;
+
+            _bookmarks.HideSelection = false;
+            preventPageRefresh = false;
+            bookmarkPage = -1;
 
             UpdateEnabled();
         }
@@ -228,14 +302,47 @@ namespace PdfiumViewer
             if (bookmark.Children != null)
             {
                 foreach (var child in bookmark.Children)
+                {
                     node.Nodes.Add(GetBookmarkNode(child));
+                }
             }
             return node;
         }
 
         private void _bookmarks_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            _renderer.Page = ((PdfBookmark)e.Node.Tag).PageIndex;
+            if (preventPageRefresh == false)
+            {
+                _renderer.Page = ((PdfBookmark)e.Node.Tag).PageIndex;
+            }
+        }
+
+        private void _bookmarks_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        {
+            // AfterSelect event is fired when child node has focus.
+            preventPageRefresh = true;
+        }
+
+        private void _bookmarks_AfterExpand(object sender, TreeViewEventArgs e)
+        {
+            // AfterSelect event is fired when child node has focus.
+            preventPageRefresh = false;
+
+            // Select a bookmark for the renderer page.
+            bookmarkPage = -1;
+            SelectBookmarkForPage(_renderer.Page);
+        }
+
+        private void _bookmarks_BeforeCollapse(object sender, TreeViewCancelEventArgs e)
+        {
+            // AfterSelect event is fired when child node has focus.
+            preventPageRefresh = true;
+        }
+
+        private void _bookmarks_AfterCollapse(object sender, TreeViewEventArgs e)
+        {
+            // AfterSelect event is fired when child node has focus.
+            preventPageRefresh = false;
         }
 
         private void _renderer_LinkClick(object sender, LinkClickEventArgs e)
