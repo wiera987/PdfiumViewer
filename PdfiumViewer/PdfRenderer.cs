@@ -1361,6 +1361,9 @@ namespace PdfiumViewer
             Point location;
             PdfPoint pdfLocation;
 
+            if (Document == null || !_pageCacheValid)
+                return;
+
             var bounds = GetDocumentBounds();
 
             if (focus.HasValue)
