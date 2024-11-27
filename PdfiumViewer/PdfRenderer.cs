@@ -42,6 +42,9 @@ namespace PdfiumViewer
         private MouseState _cachedMouseState = null;
         private TextSelectionState _textSelectionState = null;
         private RectangleF _compareBounds = Rectangle.Empty;
+        private Point zoomLocation;
+        private PdfPoint zoomPdfLocation;
+        private Rectangle zoomRectangle;
 
         /// <summary>
         /// The associated PDF document.
@@ -581,6 +584,17 @@ namespace PdfiumViewer
         }
 
         /// <summary>
+        /// Called when scroll. 
+        /// </summary>
+        /// <param name="se">The event data.</param>
+        protected override void OnScroll(ScrollEventArgs se)
+        {
+            base.OnScroll(se);
+
+            zoomLocation = new Point(-999, -999);   // Cancel zoom position when scrolling.
+        }
+
+        /// <summary>
         /// Called when the zoom level changes.
         /// </summary>
         /// <param name="e">The event args.</param>
@@ -589,6 +603,32 @@ namespace PdfiumViewer
             base.OnZoomChanged(e);
 
             UpdateScrollbars();
+        }
+
+        /// <summary>
+        /// Determines whether the specified key is a regular input key or a special key that requires preprocessing.
+        /// </summary>
+        /// <returns>
+        /// true if the specified key is a regular input key; otherwise, false.
+        /// </returns>
+        /// <param name="keyData">One of the <see cref="T:System.Windows.Forms.Keys"/> values. </param>
+        protected override bool IsInputKey(Keys keyData)
+        {
+            switch ((keyData) & Keys.KeyCode)
+            {
+                case Keys.Up:
+                case Keys.Down:
+                case Keys.Left:
+                case Keys.Right:
+                case Keys.PageUp:
+                case Keys.PageDown:
+                case Keys.Home:
+                case Keys.End:
+                    zoomLocation = new Point(-999, -999);	// Cancel zoom position when scrolling.
+                    break;
+            }
+
+            return base.IsInputKey(keyData);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -1103,6 +1143,18 @@ namespace PdfiumViewer
             }
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            var oldRect = DisplayRectangle;
+            base.OnMouseWheel(e);
+            var newRect = DisplayRectangle;
+
+            if (IsScrolled(oldRect, newRect))
+            {
+                zoomLocation = new Point(-999, -999);	// Cancel zoom position when scrolling.
+            }
+        }
+
         private void HandleMouseDownForLinks(MouseEventArgs e)
         {
             _dragState = null;
@@ -1364,23 +1416,40 @@ namespace PdfiumViewer
             if (Document == null || !_pageCacheValid)
                 return;
 
-            var bounds = GetDocumentBounds();
+            if ((zoom == ZoomMax) && (Zoom== ZoomMax))
+                return;     // Repeated processing with ZoomMax accumulates errors in zoom position. 
 
+            var fvalue = focus.HasValue ? focus.Value : new Point(-999,-999);
             if (focus.HasValue)
             {
                 // Zoom into the focus.
                 location = focus.Value;
+
+                if (zoomLocation == location)
+                {
+                    // Zoom to the same point while zooming without scrolling.
+                    pdfLocation = zoomPdfLocation;
+                }
+                else
+                {
+                    // When zoom position changes, zoom to new position.
+                    pdfLocation = PointToPdfRounded(location);
+                    zoomLocation = location;
+                    zoomPdfLocation = pdfLocation;
+                }
             }
             else
             {
                 // Zoom the center of the pane.
                 var x = ClientRectangle.Width/2;
                 var y = ClientRectangle.Height / 2;
-                
                 location = new Point(x, y);
+                pdfLocation = PointToPdfRounded(location);
+                zoomLocation = location;
+                zoomPdfLocation = pdfLocation;
             }
 
-            pdfLocation = PointToPdfRounded(location);
+            //Console.WriteLine("{0},{1:F5},({2}),({3})", focus.HasValue, zoom, location, pdfLocation.Location);
 
             base.SetZoom(zoom, null);
 
@@ -1393,6 +1462,13 @@ namespace PdfiumViewer
                 ),
                 false
             );
+        }
+
+        private bool IsScrolled(Rectangle oldRect, Rectangle newRect)
+        {
+            bool isScrolled = (oldRect.Size == newRect.Size) && (oldRect.Location != newRect.Location);
+
+            return isScrolled;
         }
 
         private void RedrawMarkers()
