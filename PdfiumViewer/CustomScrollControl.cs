@@ -381,7 +381,7 @@ namespace PdfiumViewer
             if (y < minY)
                 y = minY;
 
-            SetDisplayRectLocation(x, y);
+            SetDisplayRectLocation(x, y, false);
 
             return needLayout;
         }
