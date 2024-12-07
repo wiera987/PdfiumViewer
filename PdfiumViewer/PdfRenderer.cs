@@ -1410,8 +1410,8 @@ namespace PdfiumViewer
         /// <param name="focus">The location to focus on.</param>
         protected override void SetZoom(double zoom, Point? focus)
         {
-            Point location;
-            PdfPoint pdfLocation;
+            Point location = new Point(-999,-999);
+            PdfPoint pdfLocation = new PdfPoint(0, location);
 
             if (Document == null || !_pageCacheValid)
                 return;
@@ -1419,10 +1419,9 @@ namespace PdfiumViewer
             if ((zoom == ZoomMax) && (Zoom== ZoomMax))
                 return;     // Repeated processing with ZoomMax accumulates errors in zoom position. 
 
-            var fvalue = focus.HasValue ? focus.Value : new Point(-999,-999);
             if (focus.HasValue)
             {
-                // Zoom into the focus.
+                // Zoom into the focus point.
                 location = focus.Value;
 
                 if (zoomLocation == location)
@@ -1437,31 +1436,27 @@ namespace PdfiumViewer
                     zoomLocation = location;
                     zoomPdfLocation = pdfLocation;
                 }
+
+                base.SetZoom(zoom, null);
+
+                var newLocation = PointFromPdf(pdfLocation);
+                SetDisplayRectLocation(
+                    new Point(
+                        DisplayRectangle.Left - (newLocation.X - location.X),
+                        DisplayRectangle.Top - (newLocation.Y - location.Y)
+                    ),
+                    false
+                );
             }
             else
             {
-                // Zoom the center of the pane.
-                var x = ClientRectangle.Width/2;
-                var y = ClientRectangle.Height / 2;
-                location = new Point(x, y);
-                pdfLocation = PointToPdfRounded(location);
-                zoomLocation = location;
-                zoomPdfLocation = pdfLocation;
+                // Zoom to the focused page.
+                base.SetZoom(zoom, null);
+                Page = Page;
+                zoomLocation = new Point(-999, -999);	// Cancel zoom position when scrolling.
             }
-
             //Console.WriteLine("{0},{1:F5},({2}),({3})", focus.HasValue, zoom, location, pdfLocation.Location);
 
-            base.SetZoom(zoom, null);
-
-            var newLocation = PointFromPdf(pdfLocation);
-
-            SetDisplayRectLocation(
-                new Point(
-                    DisplayRectangle.Left - (newLocation.X - location.X),
-                    DisplayRectangle.Top - (newLocation.Y - location.Y)
-                ),
-                false
-            );
         }
 
         private bool IsScrolled(Rectangle oldRect, Rectangle newRect)
