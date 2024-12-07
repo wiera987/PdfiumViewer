@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Expando;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace PdfiumViewer
 {
@@ -11,6 +16,15 @@ namespace PdfiumViewer
     /// </summary>
     public partial class PdfViewer : UserControl
     {
+        public event EventHandler PanelBookmarkClosed;
+
+        // Constants for the SendMessage() method.
+        private const int WM_HSCROLL = 276;
+        private const int SB_LEFT = 6;
+        [DllImport("user32.dll")]
+        private static extern int SendMessage(IntPtr hWnd, int wMsg,
+                                          int wParam, int lParam);
+
         private IPdfDocument _document;
         private bool _showBookmarks;
         private bool preventPageRefresh;
@@ -146,6 +160,7 @@ namespace PdfiumViewer
 
         /// <summary>
         /// Select a bookmark for a specified page.
+        /// Do not expand new nodes.
         /// </summary>
         public void SelectBookmarkForPage(int page)
         {
@@ -154,7 +169,7 @@ namespace PdfiumViewer
 
             if (page != bookmarkPage)
             {
-                GetNodeForPage(page, _bookmarks.Nodes, ref validNode);
+                GetPageNode(page, _bookmarks.Nodes, false, ref validNode);
 
                 // Select the last valid Node.
                 if (validNode != null)
@@ -173,8 +188,9 @@ namespace PdfiumViewer
         /// </summary>
         /// <param name="page">The page being selected.</param>
         /// <param name="nodes">Bookmark Nodes being searched recursively</param>
+        /// <param name="expand">If true, search while expanding collapsed nodes</param>
         /// <param name="validNode">Currently active Node</param>
-        private void GetNodeForPage(int page, TreeNodeCollection nodes, ref TreeNode validNode)
+        private void GetPageNode(int page, TreeNodeCollection nodes, bool expand, ref TreeNode validNode)
         {
             int validPage = -1;
 
@@ -194,10 +210,11 @@ namespace PdfiumViewer
                     }
                 }
 
-                // If the tree is expanded, explore further
-                if (node.IsExpanded)
+                // If the tree is expanded, explore further.
+                // If 'expand' is true, explore nodes even if they are collapsed.
+                if (node.IsExpanded || (expand && (node.Nodes != null)))
                 {
-                    GetNodeForPage(page, node.Nodes, ref validNode);
+                    GetPageNode(page, node.Nodes, expand, ref validNode);
                 }
             }
         }
@@ -349,5 +366,113 @@ namespace PdfiumViewer
         {
             OnLinkClick(e);
         }
+
+        private void toolStripButtonExpand_Click(object sender, EventArgs e)
+        {
+            // Expand Top-Level
+            bool visible = _showBookmarks && _document != null && _document.Bookmarks.Count > 0;
+
+            if (visible)
+            {
+                foreach (TreeNode node in _bookmarks.Nodes)
+                {
+                    node.Expand();
+                }
+
+                // Show selected nodes.
+                EnsureVisibleWithoutRightScrolling(_bookmarks.SelectedNode);
+            }
+        }
+
+        private void toolStripSplitButtonCollapse_ButtonClick(object sender, EventArgs e)
+        {
+            // Collapse Top-Level
+            bool visible = _showBookmarks && _document != null && _document.Bookmarks.Count > 0;
+
+            if (visible)
+            {
+                foreach (TreeNode node in _bookmarks.Nodes)
+                {
+                    node.Collapse();
+                }
+                // Show selected nodes.
+                EnsureVisibleWithoutRightScrolling(_bookmarks.SelectedNode);
+            }
+        }
+
+        private void expandAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Expand All
+            _bookmarks.ExpandAll();
+            // Show selected nodes.
+            EnsureVisibleWithoutRightScrolling(_bookmarks.SelectedNode);
+        }
+
+        private void collapseAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Collapse All
+            CollapseChildrenNodes(_bookmarks.Nodes);
+            // Show selected nodes.
+            EnsureVisibleWithoutRightScrolling(_bookmarks.SelectedNode);
+        }
+
+        private void toolStripButtonExpandCurrent_Click(object sender, EventArgs e)
+        {
+            // Expand current bookmark
+            TreeNode validNode = null;
+
+            // Collapse all nodes initially
+            CollapseChildrenNodes(_bookmarks.Nodes);
+            GetPageNode(_renderer.Page, _bookmarks.Nodes, true, ref validNode);
+            ExpandParentNodes(validNode);
+
+            // Show selected nodes.
+            EnsureVisibleWithoutRightScrolling(_bookmarks.SelectedNode);
+        }
+
+        private void ExpandParentNodes(TreeNode node)
+        {
+            if (node != null)
+            {
+                node.Expand();
+                if (node.Parent != null)
+                {
+                    ExpandParentNodes(node.Parent);
+                }
+            }
+        }
+
+        private void CollapseChildrenNodes(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node != null)
+                {
+                    if (node.Nodes != null)
+                    {
+                        CollapseChildrenNodes(node.Nodes);
+                    }
+                    node.Collapse();
+                }
+            }
+        }
+
+        private void EnsureVisibleWithoutRightScrolling(TreeNode node)
+        {
+            // we do the standard call.. 
+            node.EnsureVisible();
+
+            // ..and afterwards we scroll to the left again!
+            SendMessage(_bookmarks.Handle, WM_HSCROLL, SB_LEFT, 0);
+        }
+
+        private void toolStripButtonClose_Click(object sender, EventArgs e)
+        {
+            ShowBookmarks = false;
+
+            // Fire a custom event when a bookmark is closed
+            PanelBookmarkClosed?.Invoke(this, e);
+        }
+
     }
 }

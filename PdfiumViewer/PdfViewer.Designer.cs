@@ -40,12 +40,20 @@ namespace PdfiumViewer
             this._zoomInButton = new System.Windows.Forms.ToolStripButton();
             this._zoomOutButton = new System.Windows.Forms.ToolStripButton();
             this._container = new System.Windows.Forms.SplitContainer();
+            this.toolStripBookmark = new System.Windows.Forms.ToolStrip();
+            this.toolStripButtonExpand = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSplitButtonCollapse = new System.Windows.Forms.ToolStripSplitButton();
+            this.expandAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.collapseAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripButtonExpandCurrent = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButtonClose = new System.Windows.Forms.ToolStripButton();
             this._bookmarks = new PdfiumViewer.NativeTreeView();
             this._renderer = new PdfiumViewer.PdfRenderer();
             this._toolStrip.SuspendLayout();
             this._container.Panel1.SuspendLayout();
             this._container.Panel2.SuspendLayout();
             this._container.SuspendLayout();
+            this.toolStripBookmark.SuspendLayout();
             this.SuspendLayout();
             // 
             // _toolStrip
@@ -105,12 +113,67 @@ namespace PdfiumViewer
             // 
             // _container.Panel1
             // 
+            this._container.Panel1.Controls.Add(this.toolStripBookmark);
             this._container.Panel1.Controls.Add(this._bookmarks);
             // 
             // _container.Panel2
             // 
             this._container.Panel2.Controls.Add(this._renderer);
             this._container.TabStop = false;
+            // 
+            // toolStripBookmark
+            // 
+            this.toolStripBookmark.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripButtonExpand,
+            this.toolStripSplitButtonCollapse,
+            this.toolStripButtonExpandCurrent,
+            this.toolStripButtonClose});
+            resources.ApplyResources(this.toolStripBookmark, "toolStripBookmark");
+            this.toolStripBookmark.Name = "toolStripBookmark";
+            // 
+            // toolStripButtonExpand
+            // 
+            this.toolStripButtonExpand.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            resources.ApplyResources(this.toolStripButtonExpand, "toolStripButtonExpand");
+            this.toolStripButtonExpand.Name = "toolStripButtonExpand";
+            this.toolStripButtonExpand.Click += new System.EventHandler(this.toolStripButtonExpand_Click);
+            // 
+            // toolStripSplitButtonCollapse
+            // 
+            this.toolStripSplitButtonCollapse.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripSplitButtonCollapse.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.expandAllToolStripMenuItem,
+            this.collapseAllToolStripMenuItem});
+            resources.ApplyResources(this.toolStripSplitButtonCollapse, "toolStripSplitButtonCollapse");
+            this.toolStripSplitButtonCollapse.Name = "toolStripSplitButtonCollapse";
+            this.toolStripSplitButtonCollapse.ButtonClick += new System.EventHandler(this.toolStripSplitButtonCollapse_ButtonClick);
+            // 
+            // expandAllToolStripMenuItem
+            // 
+            this.expandAllToolStripMenuItem.Name = "expandAllToolStripMenuItem";
+            resources.ApplyResources(this.expandAllToolStripMenuItem, "expandAllToolStripMenuItem");
+            this.expandAllToolStripMenuItem.Click += new System.EventHandler(this.expandAllToolStripMenuItem_Click);
+            // 
+            // collapseAllToolStripMenuItem
+            // 
+            this.collapseAllToolStripMenuItem.Name = "collapseAllToolStripMenuItem";
+            resources.ApplyResources(this.collapseAllToolStripMenuItem, "collapseAllToolStripMenuItem");
+            this.collapseAllToolStripMenuItem.Click += new System.EventHandler(this.collapseAllToolStripMenuItem_Click);
+            // 
+            // toolStripButtonExpandCurrent
+            // 
+            this.toolStripButtonExpandCurrent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            resources.ApplyResources(this.toolStripButtonExpandCurrent, "toolStripButtonExpandCurrent");
+            this.toolStripButtonExpandCurrent.Name = "toolStripButtonExpandCurrent";
+            this.toolStripButtonExpandCurrent.Click += new System.EventHandler(this.toolStripButtonExpandCurrent_Click);
+            // 
+            // toolStripButtonClose
+            // 
+            this.toolStripButtonClose.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripButtonClose.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            resources.ApplyResources(this.toolStripButtonClose, "toolStripButtonClose");
+            this.toolStripButtonClose.Name = "toolStripButtonClose";
+            this.toolStripButtonClose.Click += new System.EventHandler(this.toolStripButtonClose_Click);
             // 
             // _bookmarks
             // 
@@ -145,8 +208,11 @@ namespace PdfiumViewer
             this._toolStrip.ResumeLayout(false);
             this._toolStrip.PerformLayout();
             this._container.Panel1.ResumeLayout(false);
+            this._container.Panel1.PerformLayout();
             this._container.Panel2.ResumeLayout(false);
             this._container.ResumeLayout(false);
+            this.toolStripBookmark.ResumeLayout(false);
+            this.toolStripBookmark.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -163,5 +229,12 @@ namespace PdfiumViewer
         private System.Windows.Forms.SplitContainer _container;
         private NativeTreeView _bookmarks;
         private PdfRenderer _renderer;
+        private System.Windows.Forms.ToolStrip toolStripBookmark;
+        private System.Windows.Forms.ToolStripButton toolStripButtonExpand;
+        private System.Windows.Forms.ToolStripSplitButton toolStripSplitButtonCollapse;
+        private System.Windows.Forms.ToolStripMenuItem collapseAllToolStripMenuItem;
+        private System.Windows.Forms.ToolStripButton toolStripButtonExpandCurrent;
+        private System.Windows.Forms.ToolStripMenuItem expandAllToolStripMenuItem;
+        private System.Windows.Forms.ToolStripButton toolStripButtonClose;
     }
 }

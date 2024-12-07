@@ -121,28 +121,6 @@
     <value>17, 17</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="_toolStrip.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
-  </data>
-  <data name="_toolStrip.Size" type="System.Drawing.Size, System.Drawing">
-    <value>588, 25</value>
-  </data>
-  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="_toolStrip.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;_toolStrip.Name" xml:space="preserve">
-    <value>_toolStrip</value>
-  </data>
-  <data name="&gt;&gt;_toolStrip.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStrip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;_toolStrip.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;_toolStrip.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
   <data name="_saveButton.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
     <value>Magenta</value>
   </data>
@@ -182,6 +160,28 @@
   <data name="_zoomOutButton.Text" xml:space="preserve">
     <value>Zoom Out</value>
   </data>
+  <data name="_toolStrip.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="_toolStrip.Size" type="System.Drawing.Size, System.Drawing">
+    <value>588, 25</value>
+  </data>
+  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="_toolStrip.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;_toolStrip.Name" xml:space="preserve">
+    <value>_toolStrip</value>
+  </data>
+  <data name="&gt;&gt;_toolStrip.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStrip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;_toolStrip.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;_toolStrip.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="_container.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
     <value>Fill</value>
@@ -189,14 +189,152 @@
   <data name="_container.Location" type="System.Drawing.Point, System.Drawing">
     <value>0, 25</value>
   </data>
-  <data name="_bookmarks.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
+  <metadata name="toolStripBookmark.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>121, 17</value>
+  </metadata>
+  <data name="toolStripButtonExpand.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAFJSURBVEhLYxg+gEPRI5pNyTOfgSGUGSISygzig8QhfAoB
+        p4r3fxBmU/Y6AuJzKHvOh4kxyLlLAoUYOZS9wtiVPRvwYiWvdJB+DMCu5HEeZiCHiud+GJtd2esUA4M9
+        C9DCOJgYIcyh6BkFNRYJyLpIASV+oyhU8rjGIOMmBJJmU/YMQJbDh7FbAATM8l6O7Moef0GKgAY+ZJDx
+        loZKgQGbkocX1mBBwpwqXoVApUwQHdiAnKsiu7K3A8zlQwewK3kmYkumIHEIn0IAiyBg2B8C8ZGTKYey
+        myxQiNJk6nUObiB6MlXxYCctmWLLnJI+csMkmSp6qg3NZDoYSlMGdhWvLGzhjoIVvTNBajEA4dLUKwwm
+        RgiDUhzUWCRAoDQlyQIlryCwmeiAWd7dASWZAi2FSoEB0De5WIMFGePKyXAgby8wNJMpbQADAwAeqgoS
+        oZ5UtAAAAABJRU5ErkJggg==
+</value>
   </data>
-  <data name="_bookmarks.Location" type="System.Drawing.Point, System.Drawing">
+  <data name="toolStripButtonExpand.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Magenta</value>
+  </data>
+  <data name="toolStripButtonExpand.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 24</value>
+  </data>
+  <data name="toolStripButtonExpand.Text" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="toolStripButtonExpand.ToolTipText" xml:space="preserve">
+    <value>Expand Top-Level Bookmarks</value>
+  </data>
+  <data name="expandAllToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>180, 22</value>
+  </data>
+  <data name="expandAllToolStripMenuItem.Text" xml:space="preserve">
+    <value>Expand All</value>
+  </data>
+  <data name="collapseAllToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>180, 22</value>
+  </data>
+  <data name="collapseAllToolStripMenuItem.Text" xml:space="preserve">
+    <value>Collapse All</value>
+  </data>
+  <data name="toolStripSplitButtonCollapse.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAFFSURBVDhP3ZOxSgRBDIa3cHdyT6AIsjubrazUQiwUixM3
+        k/XEwicQwQdQQRDB1vcRG0F9DsHKysLyDrwD1yQeKOsdynXeDyGZSfgZ+DLR9CkpaFGzS8sM8nARp+1l
+        azQVp7wEGG6TnB/GBoY9KGgTMk4Tz8+toqqlHsQp/TSFnNbB80CHxgUgn9ispydA6jrkK7mrY+QXM5lU
+        YtYDX21o7Xx1AFj2rDGdSnzYsZwTQxHuBdSxNZr6E2VP+zGWKy6jbQHYH4KqXVYeDW2+NOOrVaF3N9JI
+        wl7jqaOzBkUoQ8FnaghZ+WYmk8oMZR+t1r2cbsoup7bmBKtd+SmvCfK5NZrSdfj16+V8GvnOrMNwKDDe
+        7U4pY7gc2nzTwtY8YHU9irCGboCulo5+GtFjq6A1AdLVs3lMKnnVTZTynB0k2/mfKIo+AOhngqW543Bu
+        AAAAAElFTkSuQmCC
+</value>
+  </data>
+  <data name="toolStripSplitButtonCollapse.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Magenta</value>
+  </data>
+  <data name="toolStripSplitButtonCollapse.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 24</value>
+  </data>
+  <data name="toolStripSplitButtonCollapse.Text" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="toolStripSplitButtonCollapse.ToolTipText" xml:space="preserve">
+    <value>Collapse Top-Level Bookmarks</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGOSURBVDhPvVS9SgNBED4Fd1dsBEHBwuR20/kENipIzN0u
+        +gZaWPgCIjaWPoGFhZ0oaBBrSwXBV1GihYVFEGKc725WDzcJOVE/GHZ+vvlmb+/2on/BmGnMS+OWBxk4
+        TB+AytKkiNP78ZrrDmPC2Ltopj7B3SGkTg9AVNru9tpV0Yizx9x9bg8hY3sBErkjeSaHNLYL49BjFFxp
+        0nOOQ0htL1kwg4jtCeKiqVp6yOUIMXo4DFEUpLPc8b40jY40qx34PgeUEiw2fgcNe8Y6tCDOC6sy9h15
+        +H4AcV6LnF/ZIb3ZF6ylBGV1bdv7quLaas614RcHlRL0UNX0DTmYitNM1ONHgkCf73AYwaTZS1CZdBPG
+        4SdywaTJYYhgh7o+reLkGjkYfOS4Wm6Hwrh1uttPmZCxRzAWaNENcuDk8aAd8l2mz+I4I5vkgc4u4XIk
+        dGLp7j76IRmHergcgprPQMqIeBT6nXHpC7MrUyR65XlCu1OuhFBVuyi0vaXpG5zqCxm7LfpR3CjTWODU
+        XyCKPgDrXcUFGj58dAAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.ImageScaling" type="System.Windows.Forms.ToolStripItemImageScaling, System.Windows.Forms">
+    <value>None</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Magenta</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.Size" type="System.Drawing.Size, System.Drawing">
+    <value>24, 24</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.Text" xml:space="preserve">
+    <value>toolStripButton1</value>
+  </data>
+  <data name="toolStripButtonExpandCurrent.ToolTipText" xml:space="preserve">
+    <value>Expand Current Bookmark</value>
+  </data>
+  <data name="toolStripButtonClose.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAEUSURBVDhP5VRBa8IwGO2lTT1u3mQoTbzpYXj2ZKdrElCH
+        4E/xIHiYv9nadlP0i3uGQbbSijcfFMJ773t8afLFe3S04mYo9JpF+g3Mv2CRHIdcbry2fgLlggn92ejq
+        UyjUMYjkArQDoxnPxcvlCrQLX7wPyLhD6CEQegrJIhBqZjR4dj7XfUh/I+TJkIwpCr6ZUAkk2oFKDAct
+        NV5I5UBohsKCcTlCWAEuqxx2BeNJTIW5DRDqC+vcaLDVg+mMAi5d/e4Wcn3cNRBh1/+Ymw/rrHaocyh0
+        IDcfCsLuc238jnol4x4FdLHlHJJFwPUHaT9TQl4ahh4kF9TBFsbS0SN9aUPLRs8+DhXumX0cXibPoB4T
+        nncGvBCB7WZU/eEAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="toolStripButtonClose.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Magenta</value>
+  </data>
+  <data name="toolStripButtonClose.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 24</value>
+  </data>
+  <data name="toolStripButtonClose.Text" xml:space="preserve">
+    <value>toolStripButton1</value>
+  </data>
+  <data name="toolStripButtonClose.ToolTipText" xml:space="preserve">
+    <value>Close Bookmarks</value>
+  </data>
+  <data name="toolStripBookmark.Location" type="System.Drawing.Point, System.Drawing">
     <value>0, 0</value>
   </data>
+  <data name="toolStripBookmark.Size" type="System.Drawing.Size, System.Drawing">
+    <value>200, 27</value>
+  </data>
+  <data name="toolStripBookmark.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="toolStripBookmark.Text" xml:space="preserve">
+    <value>toolStrip1</value>
+  </data>
+  <data name="&gt;&gt;toolStripBookmark.Name" xml:space="preserve">
+    <value>toolStripBookmark</value>
+  </data>
+  <data name="&gt;&gt;toolStripBookmark.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStrip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripBookmark.Parent" xml:space="preserve">
+    <value>_container.Panel1</value>
+  </data>
+  <data name="&gt;&gt;toolStripBookmark.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="_bookmarks.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Bottom, Left, Right</value>
+  </data>
+  <data name="_bookmarks.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 30</value>
+  </data>
   <data name="_bookmarks.Size" type="System.Drawing.Size, System.Drawing">
-    <value>200, 379</value>
+    <value>200, 349</value>
   </data>
   <data name="_bookmarks.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -211,7 +349,7 @@
     <value>_container.Panel1</value>
   </data>
   <data name="&gt;&gt;_bookmarks.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
   </data>
   <data name="&gt;&gt;_container.Panel1.Name" xml:space="preserve">
     <value>_container.Panel1</value>
@@ -330,6 +468,42 @@
     <value>_zoomOutButton</value>
   </data>
   <data name="&gt;&gt;_zoomOutButton.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonExpand.Name" xml:space="preserve">
+    <value>toolStripButtonExpand</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonExpand.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSplitButtonCollapse.Name" xml:space="preserve">
+    <value>toolStripSplitButtonCollapse</value>
+  </data>
+  <data name="&gt;&gt;toolStripSplitButtonCollapse.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSplitButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;expandAllToolStripMenuItem.Name" xml:space="preserve">
+    <value>expandAllToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;expandAllToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;collapseAllToolStripMenuItem.Name" xml:space="preserve">
+    <value>collapseAllToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;collapseAllToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonExpandCurrent.Name" xml:space="preserve">
+    <value>toolStripButtonExpandCurrent</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonExpandCurrent.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonClose.Name" xml:space="preserve">
+    <value>toolStripButtonClose</value>
+  </data>
+  <data name="&gt;&gt;toolStripButtonClose.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
