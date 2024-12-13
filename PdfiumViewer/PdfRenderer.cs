@@ -44,7 +44,6 @@ namespace PdfiumViewer
         private RectangleF _compareBounds = Rectangle.Empty;
         private Point zoomLocation;
         private PdfPoint zoomPdfLocation;
-        private Rectangle zoomRectangle;
 
         /// <summary>
         /// The associated PDF document.
@@ -330,6 +329,27 @@ namespace PdfiumViewer
 
             Markers = new PdfMarkerCollection();
             Markers.CollectionChanged += Markers_CollectionChanged;
+        }
+
+        private void ResetRenderer()
+        {
+            _maxWidth = 0;
+            _maxHeight = 0;
+
+            _visiblePageStart = 0;      // to avoid an exception from OnSetCursor.
+            _visiblePageEnd = -1;
+
+            _pageCacheValid = false;
+            _cachedLink = null;
+            _dragState = null;
+            _cachedMouseState = null;
+
+            _textSelectionState = null;
+            _isSelectingText = false;
+
+            _compareBounds = Rectangle.Empty;
+            zoomLocation = new Point(-999, -999);   // Cancel zoom position when scrolling.
+            zoomPdfLocation = new PdfPoint(0, zoomLocation);
         }
 
         private void Markers_CollectionChanged(object sender, EventArgs e)
@@ -689,9 +709,7 @@ namespace PdfiumViewer
 
         private void ReloadDocument()
         {
-            _maxWidth = 0;
-            _maxHeight = 0;
-            _textSelectionState = null;
+            ResetRenderer();
 
             foreach (var size in Document.PageSizes)
             {
@@ -1564,7 +1582,7 @@ namespace PdfiumViewer
                         pageCache.Image = null;
                     }
                 }
-
+                
                 _disposed = true;
             }
 
