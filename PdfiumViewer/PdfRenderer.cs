@@ -600,7 +600,13 @@ namespace PdfiumViewer
         {
             base.OnLayout(levent);
 
-            UpdateScrollbars();
+            // Calculate when the form is not minimized.
+            if (Height>0)
+            {
+                UpdateScrollbars();
+                // UpdateScrollbars() rebuilds the cache and changes the Page, so the event is called twice.
+                OnDisplayRectangleChanged(EventArgs.Empty);
+            }
         }
 
         /// <summary>

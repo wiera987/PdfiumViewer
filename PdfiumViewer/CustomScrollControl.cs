@@ -123,6 +123,11 @@ namespace PdfiumViewer
             var fullClient = ClientRectangle;
             var minClient = fullClient;
 
+            if (fullClient.Height == 0)
+            {
+                return false;
+            }
+
             if (HScroll)
                 fullClient.Height += SystemInformation.HorizontalScrollBarHeight;
             else
@@ -270,7 +275,7 @@ namespace PdfiumViewer
 
             _displayRect.X = x;
             _displayRect.Y = y;
-
+            
             if ((xDelta != 0 || yDelta != 0) && IsHandleCreated && preserveContents)
             {
                 var cr = ClientRectangle;
