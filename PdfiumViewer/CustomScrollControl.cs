@@ -15,6 +15,8 @@ namespace PdfiumViewer
     {
         private Size _displaySize;
         private Rectangle _displayRect;
+        private double _displayRect_X;	// Patch: Repeated magnification causes the display position to shift due to rounding error.
+        private double _displayRect_Y;	// Patch: Same as Above
         private readonly ScrollProperties _verticalScroll;
         private readonly ScrollProperties _horizontalScroll;
 
@@ -244,12 +246,12 @@ namespace PdfiumViewer
             SyncScrollbars();
         }
 
-        private void SetDisplayRectLocation(int x, int y)
+        private void SetDisplayRectLocation(double x, double y)
         {
             SetDisplayRectLocation(x, y, true);
         }
 
-        private void SetDisplayRectLocation(int x, int y, bool preserveContents)
+        private void SetDisplayRectLocation(double x, double y, bool preserveContents)
         {
             int xDelta = 0;
             int yDelta = 0;
@@ -269,12 +271,14 @@ namespace PdfiumViewer
                 y = minY;
 
             if (displayRectangle.X != x)
-                xDelta = x - displayRectangle.X;
+                xDelta = (int)(x - _displayRect_X);
             if (displayRectangle.Y != y)
-                yDelta = y - displayRectangle.Y;
+                yDelta = (int)(y - _displayRect_Y);
 
-            _displayRect.X = x;
-            _displayRect.Y = y;
+            _displayRect_X = x;
+            _displayRect_Y = y;
+            _displayRect.X = (int)x;
+            _displayRect.Y = (int)y;
             
             if ((xDelta != 0 || yDelta != 0) && IsHandleCreated && preserveContents)
             {
@@ -322,8 +326,8 @@ namespace PdfiumViewer
 
             if (needLayout)
             {
-                int x = _displayRect.X;
-                int y = _displayRect.Y;
+                double x = _displayRect_X;
+                double y = _displayRect_Y;
 
                 if (!horiz)
                     x = 0;
@@ -373,8 +377,8 @@ namespace PdfiumViewer
             if (minY > 0)
                 minY = 0;
 
-            int x = (int)(_displayRect.X * hScale);
-            int y = (int)(_displayRect.Y * vScale);
+            double x = (_displayRect_X * hScale);
+            double y = (_displayRect_Y * vScale);
 
             if (!HScroll || x > 0)
                 x = 0;
