@@ -256,8 +256,6 @@ namespace PdfiumViewer
             int xDelta = 0;
             int yDelta = 0;
 
-            Console.WriteLine("SetDisplayRectLocation({0},{1},{2})={3}", x, y, preserveContents, _displayRect);
-
             var client = ClientRectangle;
             var displayRectangle = _displayRect;
             int minX = Math.Min(client.Width - displayRectangle.Width, 0);
