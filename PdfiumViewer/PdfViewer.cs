@@ -139,11 +139,9 @@ namespace PdfiumViewer
 
             _container.Panel1Collapsed = !visible;
 
-            if (visible)
+            if (visible || construct)
             {
-                _container.Panel1Collapsed = false;
-
-                if ((_bookmarks.Nodes.Count == 0) || (construct))
+                if ((_bookmarks.Nodes.Count == 0) || construct)
                 {
                     _bookmarks.Nodes.Clear();
                     foreach (var bookmark in _document.Bookmarks)
@@ -219,6 +217,61 @@ namespace PdfiumViewer
             }
         }
 
+        /// <summary>
+        /// Get the start page and end page of the selected bookmark node.
+        /// </summary>
+        /// <returns>Tuple containing the start page and end page of the current bookmark node.</returns>
+        public void GetBookmarkPageRange(out int startPage, out int endPage)
+        {
+            if (_bookmarks.SelectedNode != null)
+            {
+                TreeNode currentNode = _bookmarks.SelectedNode;
+                PdfBookmark currentBookmark = (PdfBookmark)currentNode.Tag;
+                startPage = currentBookmark.PageIndex;
+
+                TreeNode endNode = GetEndNode(currentNode);
+                if (endNode != null)
+                {
+                    // When the node after the current node is found.
+                    PdfBookmark endBookmark = (PdfBookmark)endNode.Tag;
+                    endPage = endBookmark.PageIndex - 1;
+                }
+                else
+                {
+                    // If there is no node, it is the last page.
+                    endPage = _document.PageCount - 1;
+                }
+            }
+            else
+            {
+                startPage = -1;
+                endPage = -1;
+            }
+            //Console.WriteLine("GetBookmarkPageRange(): {0} - {1}", startPage, endPage);
+        }
+
+
+        /// <summary>
+        /// Get the end node of the current bookmark node.
+        /// When the end node at the same level cannot be found, recursively search for the parent node.
+        /// </summary>
+        /// <param name="currentNode"></param>
+        /// <returns></returns>
+        private TreeNode GetEndNode(TreeNode currentNode)
+        {
+            if (currentNode.NextNode != null)
+            {
+                return currentNode.NextNode;
+            }
+            else if (currentNode.Parent != null)
+            {
+                return GetEndNode(currentNode.Parent);
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the PdfViewer class.
@@ -460,7 +513,7 @@ namespace PdfiumViewer
         private void EnsureVisibleWithoutRightScrolling(TreeNode node)
         {
             // we do the standard call.. 
-            node.EnsureVisible();
+            node?.EnsureVisible();
 
             // ..and afterwards we scroll to the left again!
             SendMessage(_bookmarks.Handle, WM_HSCROLL, SB_LEFT, 0);

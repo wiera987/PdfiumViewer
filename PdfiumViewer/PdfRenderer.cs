@@ -1529,6 +1529,36 @@ namespace PdfiumViewer
         }
 
         /// <summary>
+        /// Checks if the specified page has any markers.
+        /// </summary>
+        /// <param name="page">The page number to check for markers.</param>
+        /// <returns>True if the page has markers, otherwise false.</returns>
+        public bool HasMarkers(int page)
+        {
+            foreach (var marker in Markers)
+            {
+                if (marker.Page != page)
+                    continue;
+
+                if (_compareBounds.IsEmpty)
+                {
+                    // If compareBounds is not specified, the marker must exist.
+                    return true;
+                }
+                else
+                {
+                    // If compareBounds is specified, the marker is within the bounds.
+                    var pdfmarker = (PdfMarker)marker;
+                    if (_compareBounds.Contains(pdfmarker.Bounds))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Scroll the PDF bounds into view.
         /// </summary>
         /// <param name="bounds">The PDF bounds to scroll into view.</param>
