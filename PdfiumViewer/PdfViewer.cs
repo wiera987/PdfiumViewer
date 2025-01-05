@@ -221,7 +221,7 @@ namespace PdfiumViewer
         /// Get the start page and end page of the selected bookmark node.
         /// </summary>
         /// <returns>Tuple containing the start page and end page of the current bookmark node.</returns>
-        public void GetBookmarkPageRange(out int startPage, out int endPage)
+        public void GetBookmarkPageRange(int page, out int startPage, out int endPage)
         {
             if (_bookmarks.SelectedNode != null)
             {
@@ -240,6 +240,13 @@ namespace PdfiumViewer
                 {
                     // If there is no node, it is the last page.
                     endPage = _document.PageCount - 1;
+                }
+
+                if ((page < startPage) || (page > endPage))
+                {
+                    // In case the target page lacks an assigned bookmark.
+                    startPage = -1;
+                    endPage = -1;
                 }
             }
             else
