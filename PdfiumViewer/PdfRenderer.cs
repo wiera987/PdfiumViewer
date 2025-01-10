@@ -541,14 +541,14 @@ namespace PdfiumViewer
             switch (Rotation)
             {
                 case PdfRotation.Rotate90:
-                    point = new Point(size.Height - point.Y, point.X);
+                    point = new Point(point.Y, size.Width - point.X);
                     size = new Size(size.Height, size.Width);
                     break;
                 case PdfRotation.Rotate180:
                     point = new Point(size.Width - point.X, size.Height - point.Y);
                     break;
                 case PdfRotation.Rotate270:
-                    point = new Point(point.Y, size.Width - point.X);
+                    point = new Point(size.Height - point.Y, point.X);
                     size = new Size(size.Height, size.Width);
                     break;
             }
