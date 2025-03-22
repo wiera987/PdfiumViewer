@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -19,6 +20,8 @@ namespace PdfiumViewer
         private static readonly double _textToleranceY = 8.0;
         private static readonly Padding PageMargin = new Padding(4);
         private static readonly SolidBrush _textSelectionBrush = new SolidBrush(Color.FromArgb(90, Color.DodgerBlue));
+        private static readonly int _flashColorAlpha = 100;
+        private static readonly Color _flashColor = Color.Orange;
 
         private int _maxWidth;
         private int _maxHeight;
@@ -37,6 +40,7 @@ namespace PdfiumViewer
         private DragState _dragState;
         private PdfRotation _rotation;
         private List<IPdfMarker>[] _markers;
+        private List<PdfTextSpan> _flashTextSpans = null;
         private PdfCursorMode _cursorMode = PdfCursorMode.Pan;
         private bool _isSelectingText = false;
         private MouseState _cachedMouseState = null;
@@ -44,6 +48,9 @@ namespace PdfiumViewer
         private RectangleF _compareBounds = Rectangle.Empty;
         private Point zoomLocation;
         private PdfPoint zoomPdfLocation;
+        private int tempFlashTextAlpha = 0;
+
+        public int FlashTextAlpha = 0;
 
         /// <summary>
         /// The associated PDF document.
@@ -727,6 +734,7 @@ namespace PdfiumViewer
             _documentScaleFactor = _maxHeight != 0 ? (double)_maxWidth / _maxHeight : 0D;
 
             _markers = null;
+            _flashTextSpans = null;
 
             UpdateScrollbars();
 
@@ -960,6 +968,12 @@ namespace PdfiumViewer
 
                     _shadeBorder.Draw(e.Graphics, pageBounds);
 
+                    if ((_flashTextSpans != null) & (FlashTextAlpha > 0))
+                    {
+                        //DrawTextSpans(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
+                        DrawTextRectangle(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
+                    }
+
                     DrawMarkers(e.Graphics, page);
 
                     DrawCompareBounds(e.Graphics, page);
@@ -1020,6 +1034,111 @@ namespace PdfiumViewer
                 if (region != null)
                     graphics.FillRegion(_textSelectionBrush, region);
             }
+        }
+
+        /// <summary>
+        /// Draws the specified text spans with a border.
+        /// </summary>
+        /// <param name="graphics">The graphics to draw on.</param>
+        /// <param name="textSpans">The text spans to draw.</param>
+        public void DrawTextSpans(Graphics graphics, IList<PdfTextSpan> textSpans, int alpha)
+        {
+            if (textSpans == null || textSpans.Count == 0)
+                return;
+
+            foreach (var textSpan in textSpans)
+            {
+                if (textSpan.Page < 0 || textSpan.Page >= _pageCache.Count)
+                    continue;
+
+                var pageCache = _pageCache[textSpan.Page];
+                if (pageCache == null)
+                    continue;
+
+                Region region = null;
+                foreach (var rectangle in Document.GetTextBounds(textSpan))
+                {
+                    if (region == null)
+                        region = new Region(BoundsFromPdf(rectangle));
+                    else
+                        region.Union(BoundsFromPdf(rectangle));
+                }
+
+                if (region != null)
+                {
+                    Color customColor = Color.FromArgb(alpha, _flashColor);
+                    SolidBrush customBrush = new SolidBrush(customColor);
+                    graphics.FillRegion(customBrush, region);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws the specified text spans with a border.
+        /// </summary>
+        /// <param name="graphics">The graphics to draw on.</param>
+        /// <param name="textSpans">The text spans to draw.</param>
+        public void DrawTextRectangle(Graphics graphics, IList<PdfTextSpan> textSpans, int alpha)
+        {
+            if (textSpans == null || textSpans.Count == 0)
+                return;
+
+            Rectangle frame = new Rectangle();
+
+            foreach (var textSpan in textSpans)
+            {
+                if (textSpan.Page < 0 || textSpan.Page >= _pageCache.Count)
+                    continue;
+
+                var pageCache = _pageCache[textSpan.Page];
+                if (pageCache == null)
+                    continue;
+
+                foreach (var rectangle in Document.GetTextBounds(textSpan))
+                {
+                    Rectangle rect2 = BoundsFromPdf(rectangle);
+
+                    if (!rect2.Size.IsEmpty)
+                    {
+                        if (frame.IsEmpty)
+                        {
+                            frame = rect2;
+                        }
+                        else
+                        {
+                            frame = GetEnclosingRectangle(frame, rect2);
+                        }
+                    }
+                }
+            }
+
+            if (!frame.Size.IsEmpty)
+            {
+                Color customColor = Color.FromArgb(alpha, _flashColor);
+                Pen customPen = new Pen(customColor,5);
+
+                graphics.DrawRectangle(customPen, frame);
+
+
+            }
+
+        }
+
+        Rectangle GetEnclosingRectangle(Rectangle rect1, Rectangle rect2)
+        {
+            // Find the minimum x and y coordinates
+            int minX = Math.Min(rect1.Left, rect2.Left);
+            int minY = Math.Min(rect1.Top, rect2.Top);
+
+            // Find the maximum x and y coordinates
+            int maxX = Math.Max(rect1.Right, rect2.Right);
+            int maxY = Math.Max(rect1.Bottom, rect2.Bottom);
+
+            // Calculate width and height
+            int width = maxX - minX;
+            int height = maxY - minY;
+
+            return new Rectangle(minX, minY, width, height);
         }
 
         private void DrawPageImage(Graphics graphics, int page, Rectangle pageBounds)
@@ -1623,6 +1742,29 @@ namespace PdfiumViewer
             }
 
             base.Dispose(disposing);
+        }
+
+        public void SetFlashTextSpans(List<PdfTextSpan> index1)
+        {
+            _flashTextSpans = new List<PdfTextSpan>(index1);
+            FlashTextAlpha = _flashColorAlpha;
+            tempFlashTextAlpha = FlashTextAlpha;
+        }
+
+        public void CalcFlashTextAlpha()
+        {
+            int step = 10;
+
+            //tempFlashTextAlpha -= (FlashTextAlpha + step - 1) / step;
+            //tempFlashTextAlpha -= (FlashTextAlpha - tempFlashTextAlpha)*3/2 + 1;
+            tempFlashTextAlpha -= (FlashTextAlpha - tempFlashTextAlpha)*3/4 + 1;
+            if (tempFlashTextAlpha <= 0)
+            {
+                tempFlashTextAlpha = 0;
+                FlashTextAlpha = 0;         // Stop flash animation.
+            }
+            //Console.WriteLine("FlashTextAlpha={0}, tempFlashTextAlpha={1}", FlashTextAlpha, tempFlashTextAlpha);
+            Invalidate();
         }
 
         private class PageCache
