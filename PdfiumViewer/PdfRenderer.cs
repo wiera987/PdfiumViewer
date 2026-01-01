@@ -971,7 +971,7 @@ namespace PdfiumViewer
                     if ((_flashTextSpans != null) & (FlashTextAlpha > 0))
                     {
                         //DrawTextSpans(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
-                        DrawTextRectangle(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
+                        DrawTextOutline(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
                     }
 
                     DrawMarkers(e.Graphics, page);
@@ -1074,16 +1074,18 @@ namespace PdfiumViewer
         }
 
         /// <summary>
-        /// Draws the specified text spans with a border.
+        /// Draws the outer outline of the specified text spans.
+        /// First and last lines are drawn individually, middle lines are merged into one rectangle.
+        /// Vertical lines are aligned to the outermost X coordinates.
         /// </summary>
         /// <param name="graphics">The graphics to draw on.</param>
         /// <param name="textSpans">The text spans to draw.</param>
-        public void DrawTextRectangle(Graphics graphics, IList<PdfTextSpan> textSpans, int alpha)
+        public void DrawTextOutline(Graphics graphics, IList<PdfTextSpan> textSpans, int alpha)
         {
             if (textSpans == null || textSpans.Count == 0)
                 return;
 
-            Rectangle frame = new Rectangle();
+            List<Rectangle> allRectangles = new List<Rectangle>();
 
             foreach (var textSpan in textSpans)
             {
@@ -1100,31 +1102,125 @@ namespace PdfiumViewer
 
                     if (!rect2.Size.IsEmpty)
                     {
-                        if (frame.IsEmpty)
-                        {
-                            frame = rect2;
-                        }
-                        else
-                        {
-                            frame = GetEnclosingRectangle(frame, rect2);
-                        }
+                        allRectangles.Add(rect2);
                     }
                 }
             }
 
-            if (!frame.Size.IsEmpty)
+            if (allRectangles.Count == 0)
+                return;
+
+            Color customColor = Color.FromArgb(alpha, _flashColor);
+            Pen customPen = new Pen(customColor, 5);
+            // Sort by the Top value.
+            allRectangles.Sort((a, b) => a.Top.CompareTo(b.Top));
+
+            if (allRectangles.Count == 1)
             {
-                Color customColor = Color.FromArgb(alpha, _flashColor);
-                Pen customPen = new Pen(customColor,5);
-
-                graphics.DrawRectangle(customPen, frame);
-
-
+                // Only one rectangle: draw outer outline
+                DrawRectangleOutline(graphics, customPen, allRectangles[0]);
             }
+            else if (allRectangles.Count == 2)
+            {
+                if (allRectangles[0].Bottom > allRectangles[1].Top)
+                {
+                    // One row
+                    Rectangle mergedMiddle = GetEnclosingRectangle(allRectangles[0], allRectangles[1]);
+                    DrawRectangleOutline(graphics, customPen, mergedMiddle);
+                }
+                else
+                {
+                    // Two row: draw outer outline of both
+                    DrawTwoRectanglesOutline(graphics, customPen, allRectangles[0], allRectangles[1]);
+                }
+            }
+            else
+            {
+                // Three or more rectangles: draw first, merged middle, and last
+                Rectangle mergedMiddle = allRectangles[1];
+                for (int i = 2; i < allRectangles.Count - 1; i++)
+                {
+                    mergedMiddle = GetEnclosingRectangle(mergedMiddle, allRectangles[i]);
+                }
+                
+                DrawMultipleRectanglesOutline(graphics, customPen, allRectangles[0], mergedMiddle, allRectangles[allRectangles.Count - 1]);
+            }
+
+            customPen.Dispose();
+        }
+
+        /// <summary>
+        /// Draw outer outline of a single rectangle.
+        /// </summary>
+        private void DrawRectangleOutline(Graphics graphics, Pen pen, Rectangle rect)
+        {
+            graphics.DrawRectangle(pen, rect);
+        }
+
+        /// <summary>
+        /// Draw outer outline of two rectangles with vertical lines aligned to outermost X coordinates.
+        /// </summary>
+        private void DrawTwoRectanglesOutline(Graphics graphics, Pen pen, Rectangle first, Rectangle last)
+        {
+            // Direction is /L2R（Left‑to‑Right)
+            //      1------2
+            //   7--8   4--3
+            //   6------5
+
+            // Line 1-2
+            graphics.DrawLine(pen, first.Left, first.Top, first.Right, first.Top);
+            // Line 2-3
+            graphics.DrawLine(pen, first.Right, first.Top, first.Right, last.Top);
+            // Line 3-4
+            graphics.DrawLine(pen, first.Right, last.Top, last.Right, last.Top);
+            // Line 4-5
+            graphics.DrawLine(pen, last.Right, last.Top, last.Right, last.Bottom);
+            // Line 5-6
+            graphics.DrawLine(pen, last.Right, last.Bottom, last.Left, last.Bottom);
+            // Line 6-7
+            graphics.DrawLine(pen, last.Left, last.Bottom, last.Left, last.Top);
+            // Line 7-8
+            graphics.DrawLine(pen, last.Left, last.Top, first.Left, last.Top);
+            // Line 8-1
+            graphics.DrawLine(pen, first.Left, last.Top, first.Left, first.Top);
 
         }
 
-        Rectangle GetEnclosingRectangle(Rectangle rect1, Rectangle rect2)
+        /// <summary>
+        /// Draw outer outline of three rectangles (first, merged middle, last) with vertical lines aligned to outermost X coordinates.
+        /// Vertical lines only extend from first.Top to middle.Bottom on the left/right edges.
+        /// </summary>
+        private void DrawMultipleRectanglesOutline(Graphics graphics, Pen pen, Rectangle first, Rectangle middle, Rectangle last)
+        {
+            // Direction is /L2R（Left‑to‑Right)
+            //      1------2
+            //   7--8      |
+            //   |         |
+            //   |      4--3
+            //   6------5
+
+            int minX = Math.Min(first.Left, Math.Min(middle.Left, last.Left));
+            int maxX = Math.Max(first.Right, Math.Max(middle.Right, last.Right));
+
+            // Line 1-2
+            graphics.DrawLine(pen, first.Left, first.Top, maxX, first.Top);
+            // Line 2-3
+            graphics.DrawLine(pen, maxX, first.Top, maxX, middle.Bottom);
+            // Line 3-4
+            graphics.DrawLine(pen, maxX, middle.Bottom, last.Right, middle.Bottom);
+            // Line 4-5
+            graphics.DrawLine(pen, last.Right, middle.Bottom, last.Right, last.Bottom);
+            // Line 5-6
+            graphics.DrawLine(pen, last.Right, last.Bottom, minX, last.Bottom);
+            // Line 6-7
+            graphics.DrawLine(pen, minX, last.Bottom, minX, middle.Top);
+            // Line 7-8
+            graphics.DrawLine(pen, minX, middle.Top, first.Left, middle.Top);
+            // Line 8-1
+            graphics.DrawLine(pen, first.Left, middle.Top, first.Left, first.Top);
+        }
+
+        private Rectangle GetEnclosingRectangle(Rectangle rect1, Rectangle rect2)
         {
             // Find the minimum x and y coordinates
             int minX = Math.Min(rect1.Left, rect2.Left);
