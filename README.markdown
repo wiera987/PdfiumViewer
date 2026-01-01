@@ -1,6 +1,6 @@
 # PdfiumViewer
 
-This PdfiumViewer is a custom version for PDFComp.
+**⚠️ Note:** This PdfiumViewer is a custom version for PDFComp.
 
 Apache 2.0 License.
 
