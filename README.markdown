@@ -1,5 +1,7 @@
 # PdfiumViewer
 
+This PdfiumViewer is a custom version for PDFComp.
+
 Apache 2.0 License.
 
 [Download from NuGet](http://nuget.org/packages/PdfiumViewer).
