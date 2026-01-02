@@ -1167,20 +1167,23 @@ namespace PdfiumViewer
             //   7--8   4--3
             //   6------5
 
+            int minX = Math.Min(first.Left, last.Left);
+            int maxX = Math.Max(first.Right, last.Right);
+
             // Line 1-2
-            graphics.DrawLine(pen, first.Left, first.Top, first.Right, first.Top);
+            graphics.DrawLine(pen, first.Left, first.Top, maxX, first.Top);
             // Line 2-3
-            graphics.DrawLine(pen, first.Right, first.Top, first.Right, last.Top);
+            graphics.DrawLine(pen, maxX, first.Top, maxX, last.Top);
             // Line 3-4
-            graphics.DrawLine(pen, first.Right, last.Top, last.Right, last.Top);
+            graphics.DrawLine(pen, maxX, last.Top, last.Right, last.Top);
             // Line 4-5
             graphics.DrawLine(pen, last.Right, last.Top, last.Right, last.Bottom);
             // Line 5-6
-            graphics.DrawLine(pen, last.Right, last.Bottom, last.Left, last.Bottom);
+            graphics.DrawLine(pen, last.Right, last.Bottom, minX, last.Bottom);
             // Line 6-7
-            graphics.DrawLine(pen, last.Left, last.Bottom, last.Left, last.Top);
+            graphics.DrawLine(pen, minX, last.Bottom, minX, last.Top);
             // Line 7-8
-            graphics.DrawLine(pen, last.Left, last.Top, first.Left, last.Top);
+            graphics.DrawLine(pen, minX, last.Top, first.Left, last.Top);
             // Line 8-1
             graphics.DrawLine(pen, first.Left, last.Top, first.Left, first.Top);
 
