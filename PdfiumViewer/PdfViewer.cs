@@ -170,13 +170,14 @@ namespace PdfiumViewer
                 GetPageNode(page, _bookmarks.Nodes, false, ref validNode);
 
                 // Select the last valid Node.
-                if (validNode != null)
+                if (validNode == null)
                 {
-                    preventPageRefresh = true;
-                    _bookmarks.SelectedNode = validNode;
-                    preventPageRefresh = false;
-                    bookmarkPage = page;
+                    page = -1;
                 }
+                preventPageRefresh = true;
+                _bookmarks.SelectedNode = validNode;
+                preventPageRefresh = false;
+                bookmarkPage = page;
             }
             //Console.WriteLine("SelectBookmarkForPage: Page={0}!={1}, Text={2}", page, bmpage, validNode?.Text);
         }
@@ -218,45 +219,104 @@ namespace PdfiumViewer
         }
 
         /// <summary>
-        /// Get the start page and end page of the selected bookmark node.
+        /// Get the start page and end page of the selected/unselected bookmark node.
         /// </summary>
         /// <returns>Tuple containing the start page and end page of the current bookmark node.</returns>
         public void GetBookmarkPageRange(int page, out int startPage, out int endPage)
         {
             if (_bookmarks.SelectedNode != null)
             {
-                TreeNode currentNode = _bookmarks.SelectedNode;
-                PdfBookmark currentBookmark = (PdfBookmark)currentNode.Tag;
-                startPage = currentBookmark.PageIndex;
-
-                TreeNode endNode = GetEndNode(currentNode);
-                if (endNode != null)
-                {
-                    // When the node after the current node is found.
-                    PdfBookmark endBookmark = (PdfBookmark)endNode.Tag;
-                    endPage = endBookmark.PageIndex - 1;
-                }
-                else
-                {
-                    // If there is no node, it is the last page.
-                    endPage = _document.PageCount - 1;
-                }
-
-                if ((page < startPage) || (page > endPage))
-                {
-                    // In case the target page lacks an assigned bookmark.
-                    startPage = -1;
-                    endPage = -1;
-                }
+                GetSelectedBookmarkPageRange(page, out startPage, out endPage);
             }
             else
             {
+                GetUnselectedBookmarkPageRange(page, out startPage, out endPage);
+            }
+            // Console.WriteLine("GetBookmarkPageRange(): {0} - {1}", startPage, endPage);
+        }
+
+        private void GetSelectedBookmarkPageRange(int page, out int startPage, out int endPage)
+        {
+            TreeNode currentNode = _bookmarks.SelectedNode;
+            PdfBookmark currentBookmark = (PdfBookmark)currentNode.Tag;
+            startPage = currentBookmark.PageIndex;
+
+            TreeNode endNode = GetEndNode(currentNode);
+            if (endNode != null)
+            {
+                // When the node after the current node is found.
+                PdfBookmark endBookmark = (PdfBookmark)endNode.Tag;
+                endPage = endBookmark.PageIndex - 1;
+            }
+            else
+            {
+                // If there is no node, it is the last page.
+                endPage = _document.PageCount - 1;
+            }
+
+            if ((page < startPage) || (page > endPage))
+            {
+                // In case the target page lacks an assigned bookmark.
                 startPage = -1;
                 endPage = -1;
             }
-            //Console.WriteLine("GetBookmarkPageRange(): {0} - {1}", startPage, endPage);
         }
 
+
+        private void GetUnselectedBookmarkPageRange(int page, out int startPage, out int endPage)
+        {
+            // No node selected: return the top-level (first-level) bookmark range that contains 'page'.
+            if (_document == null)
+            {
+                startPage = -1;
+                endPage = -1;
+                return;
+            }
+            else
+            {
+                startPage = 0;
+                endPage = _document.PageCount - 1;
+            }
+
+            TreeNode candidate = null;
+            int candidateStart = 0;
+
+            // a. Before the range defined by the bookmarks
+            // b. Gap within the range defined by the bookmarks
+            // c. After the range defined by the bookmarks
+
+            // Find the last top-level bookmark whose PageIndex <= page
+            foreach (TreeNode node in _bookmarks.Nodes)
+            {
+                PdfBookmark bm = (PdfBookmark)node.Tag;
+                if (bm.PageIndex <= page)
+                {
+                    candidate = node;
+                    candidateStart = bm.PageIndex;
+                }
+                else
+                {
+                    endPage = bm.PageIndex-1;
+                    break;
+                }
+            }
+
+            if (candidate != null)
+            {
+                // If there is a next node, it will be PageIndex -1, if not it will be the last page.
+                startPage = candidateStart;
+                if (candidate.NextNode != null)
+                {
+                    endPage = ((PdfBookmark)candidate.NextNode.Tag).PageIndex - 1;
+                }
+                else
+                {
+                    endPage = _document.PageCount - 1;
+                }
+            }
+
+            return;
+        }
 
         /// <summary>
         /// Get the end node of the current bookmark node.
