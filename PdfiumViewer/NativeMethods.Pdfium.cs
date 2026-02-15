@@ -526,6 +526,87 @@ namespace PdfiumViewer
             }
         }
 
+        #region Experimental APIs
+        public static void FPDFText_GetFillColor(IntPtr page, int index, out Color fillColor)
+        {
+            lock (LockString)
+            {
+                uint r, g, b, a;
+                Imports.FPDFText_GetFillColor(page, index, out r, out g, out b, out a);
+                fillColor = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+            }
+        }
+
+        public static void FPDFText_GetStrokeColor(IntPtr page, int index, out Color strokeColor)
+        {
+            lock (LockString)
+            {
+                uint r, g, b, a;
+                Imports.FPDFText_GetStrokeColor(page, index, out r, out g, out b, out a);
+                strokeColor = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+            }
+        }
+
+        public static int FPDFPage_GetAnnotCount(IntPtr page)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFPage_GetAnnotCount(page);
+            }
+        }
+
+        public static IntPtr FPDFPage_GetAnnot(IntPtr page, int index)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFPage_GetAnnot(page, index);
+            }
+        }
+
+        public static void FPDFPage_CloseAnnot(IntPtr annot)
+        {
+            lock (LockString)
+            {
+                Imports.FPDFPage_CloseAnnot(annot);
+            }
+        }
+
+        public static FPDF_ANNOTATION_SUBTYPE FPDFAnnot_GetSubtype(IntPtr annot)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFAnnot_GetSubtype(annot);
+            }
+        }
+
+        public static void FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out Color annotColor)
+        {
+            lock (LockString)
+            {
+                uint r, g, b, a;
+                Imports.FPDFAnnot_GetColor(annot, type, out r, out g, out b, out a);
+                annotColor = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+            }
+        }
+
+        public static UIntPtr FPDFAnnot_CountAttachmentPoints(IntPtr annot)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFAnnot_CountAttachmentPoints(annot);
+            }
+        }
+
+        public static bool FPDFAnnot_GetAttachmentPoints(IntPtr annot, UIntPtr quad_index, out FS_QUADPOINTSF quad_points)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFAnnot_GetAttachmentPoints(annot, quad_index, out quad_points);
+            }
+        }
+        #endregion
+
+
         #region Save / Edit Methods
 
         public static PdfRotation FPDFPage_GetRotation(IntPtr page)
@@ -847,6 +928,38 @@ namespace PdfiumViewer
             [DllImport("pdfium.dll")]
             public static extern uint FPDF_GetMetaText(IntPtr document, string tag, byte[] buffer, uint buflen);
 
+            #region Experimental APIs
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFText_GetFillColor(IntPtr page, int index, out uint R, out uint G, out uint B, out uint A);
+
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFText_GetStrokeColor(IntPtr page, int index, out uint R, out uint G, out uint B, out uint A);
+
+            [DllImport("pdfium.dll")]
+			public static extern int FPDFPage_GetAnnotCount(IntPtr page);
+			
+			[DllImport("pdfium.dll")]
+			public static extern IntPtr FPDFPage_GetAnnot(IntPtr page, int index);
+
+            [DllImport("pdfium.dll")]
+            public static extern void FPDFPage_CloseAnnot(IntPtr annot);
+
+            [DllImport("pdfium.dll")]
+			public static extern FPDF_ANNOTATION_SUBTYPE FPDFAnnot_GetSubtype(IntPtr annot);
+			
+			[DllImport("pdfium.dll", CharSet = CharSet.Unicode)]
+			public static extern uint FPDFAnnot_GetStringValue(IntPtr annot, [MarshalAs(UnmanagedType.LPStr)]string key, StringBuilder buffer, uint buflen);
+
+			[DllImport("pdfium.dll")]
+			public static extern bool FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out uint R, out uint G, out uint B, out uint A);
+
+			[DllImport("pdfium.dll")]
+			public static extern UIntPtr FPDFAnnot_CountAttachmentPoints(IntPtr annot);
+			
+			[DllImport("pdfium.dll")]
+			public static extern bool FPDFAnnot_GetAttachmentPoints(IntPtr annot, UIntPtr quad_index, out FS_QUADPOINTSF quad_points);
+            #endregion
+
             #region Save/Edit APIs
 
             [DllImport("pdfium.dll")]
@@ -1034,6 +1147,19 @@ namespace PdfiumViewer
             public float bottom;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct FS_QUADPOINTSF
+        {
+            public float x1;
+            public float y1;
+            public float x2;
+            public float y2;
+            public float x3;
+            public float y3;
+            public float x4;
+            public float y4;
+        }
+
         public enum FPDF_ERR : uint
         {
             FPDF_ERR_SUCCESS = 0,		// No error.
@@ -1044,6 +1170,47 @@ namespace PdfiumViewer
             FPDF_ERR_SECURITY = 5,		// Unsupported security scheme.
             FPDF_ERR_PAGE = 6		// Page not found or content error.
         }
+
+        #region Experimental APIs
+        public enum FPDF_ANNOTATION_SUBTYPE
+        {
+            UNKNOWN = 0,
+            TEXT = 1,
+            LINK = 2,
+            FREETEXT = 3,
+            LINE = 4,
+            SQUARE = 5,
+            CIRCLE = 6,
+            POLYGON = 7,
+            POLYLINE = 8,
+            HIGHLIGHT = 9,      // Highlight
+            UNDERLINE = 10,     // Underline
+            SQUIGGLY = 11,      // Squiggly
+            STRIKEOUT = 12,     // Strikeout
+            STAMP = 13,
+            CARET = 14,
+            INK = 15,
+            POPUP = 16,
+            FILEATTACHMENT = 17,
+            SOUND = 18,
+            MOVIE = 19,
+            WIDGET = 20,
+            SCREEN = 21,
+            PRINTERMARK = 22,
+            TRAPNET = 23,
+            WATERMARK = 24,
+            THREED = 25,
+            RICHMEDIA = 26,
+            XFAWIDGET = 27,
+            REDACT = 28
+        }
+
+        public enum FPDFANNOT_COLORTYPE
+        {
+            Color = 0,
+            InteriorColor = 1
+        }
+        #endregion
 
         #region Save/Edit Structs and Flags
         [Flags]

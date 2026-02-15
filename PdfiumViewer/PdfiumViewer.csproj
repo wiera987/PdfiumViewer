@@ -85,6 +85,7 @@
     <Compile Include="PdfInformation.cs" />
     <Compile Include="PdfSearchManager.cs" />
     <Compile Include="PdfTextSpan.cs" />
+    <Compile Include="PdfTextStyle.cs" />
     <Compile Include="PdfViewerCursorMode.cs" />
     <Compile Include="StreamManager.cs" />
     <Compile Include="PdfPageLink.cs" />

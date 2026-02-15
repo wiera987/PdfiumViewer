@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using static PdfiumViewer.NativeMethods;
+using static System.Net.WebRequestMethods;
 
 namespace PdfiumViewer
 {
@@ -425,7 +428,7 @@ namespace PdfiumViewer
             }
         }
 
-        private IList<PdfRectangle> GetTextBounds(IntPtr textPage, int page, int index, int matchLength)
+        private IList<PdfRectangle> GetTextBounds(IntPtr textPage, int pageNumber, int index, int matchLength)
         {
             var result = new List<PdfRectangle>();
             RectangleF? lastBounds = null;
@@ -454,12 +457,12 @@ namespace PdfiumViewer
                         bottom - top
                     );
 
-                    result[result.Count - 1] = new PdfRectangle(page, lastBounds.Value);
+                    result[result.Count - 1] = new PdfRectangle(pageNumber, lastBounds.Value);
                 }
                 else
                 {
                     lastBounds = bounds;
-                    result.Add(new PdfRectangle(page, bounds));
+                    result.Add(new PdfRectangle(pageNumber, bounds));
                 }
             }
 
@@ -490,12 +493,12 @@ namespace PdfiumViewer
             );
         }
 
-        public string GetPdfText(int page)
+        public string GetPdfText(int pageNumber)
         {
-            var pageData = GetPageData(_document, _form, page);
+            var pageData = GetPageData(_document, _form, pageNumber);
             {
                 int length = NativeMethods.FPDFText_CountChars(pageData.TextPage);
-                return GetPdfText(pageData, new PdfTextSpan(page, 0, length));
+                return GetPdfText(pageData, new PdfTextSpan(pageNumber, 0, length));
             }
         }
 
@@ -572,17 +575,17 @@ namespace PdfiumViewer
             }
         }
 
-        public char GetCharacter(int page, int index)
+        public char GetCharacter(int pageNumber, int index)
         {
-            var pageData = GetPageData(_document, _form, page);
+            var pageData = GetPageData(_document, _form, pageNumber);
             {
                 return NativeMethods.FPDFText_GetUnicode(pageData.TextPage, index);
             }
         }
 
-        public int CountChars(int page)
+        public int CountChars(int pageNumber)
         {
-            var pageData = GetPageData(_document, _form, page);
+            var pageData = GetPageData(_document, _form, pageNumber);
             {
                 return NativeMethods.FPDFText_CountChars(pageData.TextPage);
             }
@@ -689,6 +692,100 @@ namespace PdfiumViewer
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Retrieves the text style information for a specific character on a pageNumber.
+        /// </summary>
+        /// <param name="pageNumber">The pageNumber number.</param>
+        /// <param name="index">The character index on the pageNumber.</param>
+        /// <returns>A PdfTextStyle object containing style information.</returns>
+        public PdfTextStyle GetTextStyle(int pageNumber, int index)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
+
+            bool isUnderlined = false;
+            bool isStrikethrough = false;
+            bool isHighlighted = false;
+            bool IsSquiggly = false;
+            Color fillColor = Color.Empty;
+            Color strokeColor = Color.Empty;
+            Color annotationColor = Color.Empty;
+
+            var pageData = GetPageData(_document, _form, pageNumber);
+            {
+                NativeMethods.FPDFText_GetFillColor(pageData.TextPage, index, out fillColor);
+                NativeMethods.FPDFText_GetStrokeColor(pageData.TextPage, index, out strokeColor);
+
+                // Get the character bounds
+                NativeMethods.FPDFText_GetCharBox(
+                    pageData.TextPage,
+                    index,
+                    out var charLeft,
+                    out var charRight,
+                    out var charBottom,
+                    out var charTop
+                );
+
+                RectangleF charBounds = new RectangleF(
+                    (float)charLeft,
+                    (float)charTop,
+                    (float)(charRight - charLeft),
+                    (float)(charBottom - charTop)
+                );
+
+                // Detect underline, strikethrough, and highlight annotations
+                int annotCount = NativeMethods.FPDFPage_GetAnnotCount(pageData.Page);
+                for (int i = 0; i < annotCount; i++)
+                {
+                    IntPtr annotHandle = NativeMethods.FPDFPage_GetAnnot(pageData.Page, i);
+                    if (annotHandle == IntPtr.Zero)
+                        continue;
+
+                    var subtype = NativeMethods.FPDFAnnot_GetSubtype(annotHandle);
+
+                    // Check attachment points if available
+                    int attachmentPointCount = (int)NativeMethods.FPDFAnnot_CountAttachmentPoints(annotHandle);
+                    for (int j = 0; j < attachmentPointCount; j++)
+                    {
+                        NativeMethods.FPDFAnnot_GetAttachmentPoints(annotHandle, (UIntPtr)j, out var quadPoints);
+
+                        RectangleF annotBounds = new RectangleF(
+                            Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                            Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4)),
+                            Math.Max(Math.Max(quadPoints.x1, quadPoints.x2), Math.Max(quadPoints.x3, quadPoints.x4)) - Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                            Math.Max(Math.Max(quadPoints.y1, quadPoints.y2), Math.Max(quadPoints.y3, quadPoints.y4)) - Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4))
+                        );
+
+                        // Check if the character bounds intersect with the annotation bounds
+                        if (charBounds.IntersectsWith(annotBounds))
+                        {
+                            if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.UNDERLINE)
+                            {
+                                isUnderlined = true;
+                            }
+                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.SQUIGGLY)
+                            {
+                                IsSquiggly = true;
+                            }
+                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.STRIKEOUT)
+                            {
+                                isStrikethrough = true;
+                            }
+                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
+                            {
+                                isHighlighted = true;
+                                NativeMethods.FPDFAnnot_GetColor(annotHandle, NativeMethods.FPDFANNOT_COLORTYPE.Color, out annotationColor);
+                            }
+                        }
+                    }
+
+                    NativeMethods.FPDFPage_CloseAnnot(annotHandle);
+                }
+            }
+
+            return new PdfTextStyle(pageNumber, index, fillColor, strokeColor, isUnderlined, isStrikethrough, isHighlighted, IsSquiggly, annotationColor);
         }
 
         private PageData GetPageData(IntPtr document, IntPtr form, int pageNumber)

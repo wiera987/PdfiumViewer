@@ -278,5 +278,13 @@ namespace PdfiumViewer
         /// <param name="page">The page to get the character count from</param>
         /// <returns>Number of characters in the page. Generated characters, like additional space characters, new line characters, are also counted.</returns>
         int CountCharacters(int page);
+
+        /// <summary>
+        /// Retrieves the text style information for a specific character on a page.
+        /// </summary>
+        /// <param name="page">The page number.</param>
+        /// <param name="charIndex">The character index on the page.</param>
+        /// <returns>A PdfTextStyle object containing style information.</returns>
+        PdfTextStyle GetTextStyle(int page, int charIndex);
     }
 }

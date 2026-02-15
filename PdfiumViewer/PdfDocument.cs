@@ -542,6 +542,17 @@ namespace PdfiumViewer
         }
 
         /// <summary>
+        /// Retrieves the text style information for a specific character on a page.
+        /// </summary>
+        /// <param name="page">The page number.</param>
+        /// <param name="charIndex">The character index on the page.</param>
+        /// <returns>A PdfTextStyle object containing style information.</returns>
+        public PdfTextStyle GetTextStyle(int page, int charIndex)
+        {
+            return _file.GetTextStyle(page, charIndex);
+        }
+
+        /// <summary>
         /// Creates a <see cref="PrintDocument"/> for the PDF document.
         /// </summary>
         /// <returns></returns>
