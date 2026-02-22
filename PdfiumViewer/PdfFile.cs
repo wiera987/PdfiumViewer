@@ -107,9 +107,7 @@ namespace PdfiumViewer
                         uri = sb.ToString();
                     }
 
-                    var rect = new NativeMethods.FS_RECTF();
-
-                    if (NativeMethods.FPDFLink_GetAnnotRect(annotation, rect) && (target.HasValue || uri != null))
+                    if (NativeMethods.FPDFLink_GetAnnotRect(annotation, out var rect) && (target.HasValue || uri != null))
                     {
                         links.Add(new PdfPageLink(
                             new RectangleF(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top),
@@ -391,7 +389,7 @@ namespace PdfiumViewer
 
         public RectangleF RectangleToPdf(int page, Rectangle rect)
         {
-        	var pageData = GetPageData(_document, _form, page);
+            var pageData = GetPageData(_document, _form, page);
             {
                 NativeMethods.FPDF_DeviceToPage(
                     pageData.Page,
@@ -729,64 +727,279 @@ namespace PdfiumViewer
                 );
 
                 RectangleF charBounds = new RectangleF(
-                    (float)charLeft,
-                    (float)charTop,
-                    (float)(charRight - charLeft),
-                    (float)(charBottom - charTop)
+                    (float)Math.Min(charLeft, charRight),
+                    (float)Math.Min(charBottom, charTop),
+                    (float)Math.Abs(charRight - charLeft),
+                    (float)Math.Abs(charBottom - charTop)
                 );
 
-                // Detect underline, strikethrough, and highlight annotations
-                int annotCount = NativeMethods.FPDFPage_GetAnnotCount(pageData.Page);
-                for (int i = 0; i < annotCount; i++)
-                {
-                    IntPtr annotHandle = NativeMethods.FPDFPage_GetAnnot(pageData.Page, i);
-                    if (annotHandle == IntPtr.Zero)
-                        continue;
+                // Get the character bounds
+                NativeMethods.FPDFText_GetLooseCharBox(
+                    pageData.TextPage,
+                    index,
+                    out var looseRect
+                );
 
-                    var subtype = NativeMethods.FPDFAnnot_GetSubtype(annotHandle);
+                RectangleF looseBounds = new RectangleF(
+                    (float)Math.Min(looseRect.left, looseRect.right),
+                    (float)Math.Min(looseRect.bottom, looseRect.top),
+                    (float)Math.Abs(looseRect.right - looseRect.left),
+                    (float)Math.Abs(looseRect.bottom - looseRect.top)
+                );
 
-                    // Check attachment points if available
-                    int attachmentPointCount = (int)NativeMethods.FPDFAnnot_CountAttachmentPoints(annotHandle);
-                    for (int j = 0; j < attachmentPointCount; j++)
-                    {
-                        NativeMethods.FPDFAnnot_GetAttachmentPoints(annotHandle, (UIntPtr)j, out var quadPoints);
+                NativeMethods.FPDFText_GetCharOrigin(
+                    pageData.TextPage,
+                    index,
+                    out var x,
+                    out var y
+                );
+                float originY = (float)y;
 
-                        RectangleF annotBounds = new RectangleF(
-                            Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
-                            Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4)),
-                            Math.Max(Math.Max(quadPoints.x1, quadPoints.x2), Math.Max(quadPoints.x3, quadPoints.x4)) - Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
-                            Math.Max(Math.Max(quadPoints.y1, quadPoints.y2), Math.Max(quadPoints.y3, quadPoints.y4)) - Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4))
-                        );
-
-                        // Check if the character bounds intersect with the annotation bounds
-                        if (charBounds.IntersectsWith(annotBounds))
-                        {
-                            if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.UNDERLINE)
-                            {
-                                isUnderlined = true;
-                            }
-                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.SQUIGGLY)
-                            {
-                                IsSquiggly = true;
-                            }
-                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.STRIKEOUT)
-                            {
-                                isStrikethrough = true;
-                            }
-                            else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
-                            {
-                                isHighlighted = true;
-                                NativeMethods.FPDFAnnot_GetColor(annotHandle, NativeMethods.FPDFANNOT_COLORTYPE.Color, out annotationColor);
-                            }
-                        }
-                    }
-
-                    NativeMethods.FPDFPage_CloseAnnot(annotHandle);
-                }
+                CheckAnnotBounds(pageData, charBounds, ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref IsSquiggly, ref annotationColor);
+                CheckPageObjBounds(pageData, looseBounds, originY, ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref IsSquiggly, ref annotationColor);
             }
 
             return new PdfTextStyle(pageNumber, index, fillColor, strokeColor, isUnderlined, isStrikethrough, isHighlighted, IsSquiggly, annotationColor);
         }
+
+        private static void CheckAnnotBounds(PageData pageData,
+                                               RectangleF charBounds,
+                                               ref bool isUnderlined,
+                                               ref bool isStrikethrough,
+                                               ref bool isHighlighted,
+                                               ref bool isSquiggly,
+                                               ref Color annotationColor)
+        {
+            // Detect underline, strikethrough, and highlight annotations
+            int annotCount = NativeMethods.FPDFPage_GetAnnotCount(pageData.Page);
+            for (int i = 0; i < annotCount; i++)
+            {
+                IntPtr annotHandle = NativeMethods.FPDFPage_GetAnnot(pageData.Page, i);
+                if (annotHandle == IntPtr.Zero)
+                    continue;
+
+                var subtype = NativeMethods.FPDFAnnot_GetSubtype(annotHandle);
+
+                // Check attachment points if available
+                int attachmentPointCount = (int)NativeMethods.FPDFAnnot_CountAttachmentPoints(annotHandle);
+                for (int j = 0; j < attachmentPointCount; j++)
+                {
+                    NativeMethods.FPDFAnnot_GetAttachmentPoints(annotHandle, (UIntPtr)j, out var quadPoints);
+
+                    RectangleF annotBounds = new RectangleF(
+                        Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                        Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4)),
+                        Math.Max(Math.Max(quadPoints.x1, quadPoints.x2), Math.Max(quadPoints.x3, quadPoints.x4)) - Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                        Math.Max(Math.Max(quadPoints.y1, quadPoints.y2), Math.Max(quadPoints.y3, quadPoints.y4)) - Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4))
+                    );
+
+                    // Check if the character bounds intersect with the annotation bounds
+                    if (charBounds.IntersectsWith(annotBounds))
+                    {
+                        if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.UNDERLINE)
+                        {
+                            isUnderlined = true;
+                        }
+                        else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.SQUIGGLY)
+                        {
+                            isSquiggly = true;
+                        }
+                        else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.STRIKEOUT)
+                        {
+                            isStrikethrough = true;
+                        }
+                        else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
+                        {
+                            isHighlighted = true;
+                            NativeMethods.FPDFAnnot_GetColor(annotHandle, NativeMethods.FPDFANNOT_COLORTYPE.Color, out annotationColor);
+                        }
+                    }
+                }
+
+                NativeMethods.FPDFPage_CloseAnnot(annotHandle);
+            }
+        }
+
+        private static void CheckPageObjBounds(PageData pageData,
+                                               RectangleF charBounds,
+                                               float originY,
+                                               ref bool isUnderlined,
+                                               ref bool isStrikethrough,
+                                               ref bool isHighlighted,
+                                               ref bool isSquiggly,
+                                               ref Color annotationColor)
+        {
+            int objCount = NativeMethods.FPDFPage_CountObjects(pageData.Page);
+            for (int i = 0; i < objCount; i++)
+            {
+                IntPtr obj = NativeMethods.FPDFPage_GetObject(pageData.Page, i);
+                if (obj == IntPtr.Zero)
+                    continue;
+
+                if (NativeMethods.FPDFPageObj_GetType(obj) != FPDF_PAGEOBJ.PATH)
+                    continue;
+
+                if (!TryGetObjBounds(obj, out RectangleF objBounds))
+                    continue;
+
+                // Fast intersection test first.
+                if (!charBounds.IntersectsWith(objBounds))
+                    continue;
+
+                // Classification (heuristics).
+                ClassifyPathAgainstCharBounds(obj, objBounds, charBounds, originY,
+                                              ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref isSquiggly,
+                                              ref annotationColor);
+            }
+        }
+
+        private static bool TryGetObjBounds(IntPtr pageObject, out RectangleF bounds)
+        {
+            bounds = RectangleF.Empty;
+
+            float left, bottom, right, top;
+            bool ok = NativeMethods.FPDFPageObj_GetBounds(pageObject, out left, out bottom, out right, out top);
+            if (!ok)
+                return false;
+
+            float x = Math.Min(left, right);
+            float y = Math.Min(bottom, top);
+            float w = Math.Abs(right - left);
+            float h = Math.Abs(top - bottom);
+            bounds = new RectangleF(x, y, w, h);
+            return (w > 0 && h > 0);
+        }
+
+        private static void ClassifyPathAgainstCharBounds(IntPtr pathObj,
+                                                         RectangleF pathBounds,
+                                                         RectangleF charBounds,
+                                                         float originY,
+                                                         ref bool isUnderlined,
+                                                         ref bool isStrikethrough,
+                                                         ref bool isHighlighted,
+                                                         ref bool isSquiggly,
+                                                         ref Color annotationColor)
+        {
+            // Thresholds (tune these for real-world PDFs).
+            float charH = charBounds.Height;
+            float pathH = pathBounds.Height;
+            float thinLineMax = Math.Max(0.6f, charH * 0.1f);       // Max line thickness (for underline/strikethrough).
+            float squigglyMax = Math.Max(1.0f, charH * 0.175f);     // Max line thickness (for squiggly underline).
+            float highlightMin = Math.Max(1.2f, charH * 0.5f);      // If thick enough, suspect highlight-like fill.
+            float horizontalMinAspect = 2.0f;                       // Horizontal aspect ratio (width/height).
+            float charMidY = charBounds.Top + charH * 0.5f;
+            float pathMidY = pathBounds.Top + pathH * 0.5f;
+            float underlineMaxY = (charMidY + originY) / 2;
+
+            NativeMethods.FPDFPageObj_GetStrokeWidth(pathObj, out var pathWidth);   // Path stroke width.
+            float pathRatio = (pathWidth <= float.Epsilon) ? (1.0f / pathH) : (pathWidth / pathH);  // Stroke-to-height ratio.
+            float pathAspect = (pathBounds.Height <= 0.0001f) ? float.PositiveInfinity : (pathBounds.Width / pathBounds.Height);
+            bool pathStraightLine = IsStraightLine(pathObj);
+
+            // PDF coordinates start at the bottom-left of the page, so Top is below the text and Bottom is above it.
+            if (pathAspect >= horizontalMinAspect)
+            {
+                // 1) Underline.
+                if (pathRatio > 0.45f)
+                {
+                    // Near the lower side of the glyph (allow some downward tolerance).
+                    if ((pathMidY >= charBounds.Top - thinLineMax) && (pathMidY < underlineMaxY))
+                    {
+                        // Underline.
+                        isUnderlined = true;
+                        return;
+                    }
+                }
+
+                // 2) Strikethrough.
+                if ((pathRatio > 0.45f) || pathStraightLine)
+                {
+                    // Around the glyph (allow some upward tolerance).
+                    if (pathBounds.Bottom <= charBounds.Bottom + thinLineMax)
+                    {
+                        // Strikethrough.
+                        isStrikethrough = true;
+                        return;
+                    }
+
+                }
+                else
+                {
+                    // 3) Squiggly underline.
+                    // Near the lower side of the glyph (allow some downward tolerance).
+                    if ((pathMidY >= charBounds.Top - squigglyMax) && (pathMidY < underlineMaxY))
+                    {
+                        isSquiggly = true;
+                        return;
+                    }
+                }
+
+                // 4) Highlight-like (background fill): inferred from geometry only.
+                if (pathWidth > highlightMin)
+                {
+                    // Check whether it sufficiently covers charBounds (not just intersection; rough containment).
+                    bool covers = (pathBounds.Left <= charBounds.Left + charBounds.Width * 0.2f) &&
+                                  (pathBounds.Right >= charBounds.Right - charBounds.Width * 0.2f);
+
+                    if (covers)
+                    {
+                        isHighlighted = true;
+
+                        // Get the color if possible.
+                        if (TryGetPathColor(pathObj, out var c))
+                        {
+                            annotationColor = c;
+                        }
+                        return;
+                    }
+                }
+            }
+
+        }
+
+        private static bool IsStraightLine(IntPtr pathObj)
+        {
+            int segCount = NativeMethods.FPDFPath_CountSegments(pathObj);
+            if (segCount != 2)
+            {
+                return false; // Not enough points/segments.
+            }
+
+            for (int i = 0; i < segCount; i++)
+            {
+                IntPtr seg = NativeMethods.FPDFPath_GetPathSegment(pathObj, i);
+                FPDF_SEGMENT type = NativeMethods.FPDFPathSegment_GetType(seg);
+
+                // If it contains a Bezier segment, it's not a straight line (likely squiggly, etc.).
+                if (type == FPDF_SEGMENT.BEZIERTO)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryGetPathColor(IntPtr pathObj, out Color color)
+        {
+            color = Color.Empty;
+
+            // Only if the binding exposes it (fpdf_edit.h defines Stroke/Fill "Get" APIs).
+            if (NativeMethods.FPDFPageObj_GetFillColor(pathObj, out uint r, out uint g, out uint b, out uint a))
+            {
+                color = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                return true;
+            }
+
+            if (NativeMethods.FPDFPageObj_GetStrokeColor(pathObj, out r, out g, out b, out a))
+            {
+                color = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                return true;
+            }
+
+            return false;
+        }
+
 
         private PageData GetPageData(IntPtr document, IntPtr form, int pageNumber)
         {

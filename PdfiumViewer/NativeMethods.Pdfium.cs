@@ -307,6 +307,22 @@ namespace PdfiumViewer
             }
         }
         
+        public static bool FPDFText_GetLooseCharBox(IntPtr page, int index, out FS_RECTF rect)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFText_GetLooseCharBox(page, index, out rect);
+            }
+        }
+
+        public static void FPDFText_GetCharOrigin(IntPtr page, int index, out double x, out double y)
+        {
+            lock (LockString)
+            {
+                Imports.FPDFText_GetCharOrigin(page, index, out x, out y);
+            }
+        }
+
         public static int FPDFText_GetCharIndexAtPos(IntPtr page, double x, double y, double xTolerance, double yTolerance)
         {
             lock (LockString)
@@ -409,11 +425,11 @@ namespace PdfiumViewer
             }
         }
 
-        public static bool FPDFLink_GetAnnotRect(IntPtr linkAnnot, FS_RECTF rect)
+        public static bool FPDFLink_GetAnnotRect(IntPtr linkAnnot, out FS_RECTF rect)
         {
             lock (LockString)
             {
-                return Imports.FPDFLink_GetAnnotRect(linkAnnot, rect);
+                return Imports.FPDFLink_GetAnnotRect(linkAnnot, out rect);
             }
         }
 
@@ -604,6 +620,31 @@ namespace PdfiumViewer
                 return Imports.FPDFAnnot_GetAttachmentPoints(annot, quad_index, out quad_points);
             }
         }
+
+        public static int FPDFPath_CountSegments(IntPtr pathObj)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFPath_CountSegments(pathObj);
+            }
+        }
+
+        public static IntPtr FPDFPath_GetPathSegment(IntPtr pathObj, int index)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFPath_GetPathSegment(pathObj, index);
+            }
+        }
+
+        public static FPDF_SEGMENT FPDFPathSegment_GetType(IntPtr pathSegment)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFPathSegment_GetType(pathSegment);
+            }
+        }
+
         #endregion
 
 
@@ -623,6 +664,51 @@ namespace PdfiumViewer
             {
                 Imports.FPDFPage_SetRotation(page, (int)rotation);
             }
+        }
+
+        public static int FPDFPage_CountObjects(IntPtr page)
+        {
+            lock (LockString)
+                return Imports.FPDFPage_CountObjects(page);
+        }
+        
+        public static IntPtr FPDFPage_GetObject(IntPtr page, int index)
+        {
+            lock (LockString)
+                return Imports.FPDFPage_GetObject(page, index);
+        }
+
+        public static FPDF_PAGEOBJ FPDFPageObj_GetType(IntPtr pageObject)
+        {
+            lock (LockString)
+                return (FPDF_PAGEOBJ)Imports.FPDFPageObj_GetType(pageObject);
+        }
+        
+        public static bool FPDFPageObj_GetBounds(IntPtr pageObject,
+            out float left, out float bottom, out float right, out float top)
+        {
+            lock (LockString)
+                return Imports.FPDFPageObj_GetBounds(pageObject, out left, out bottom, out right, out top);
+        }
+        
+        public static bool FPDFPageObj_GetFillColor(IntPtr pageObject,
+            out uint r, out uint g, out uint b, out uint a)
+        {
+            lock (LockString)
+                return Imports.FPDFPageObj_GetFillColor(pageObject, out r, out g, out b, out a);
+        }
+        
+        public static bool FPDFPageObj_GetStrokeColor(IntPtr pageObject,
+            out uint r, out uint g, out uint b, out uint a)
+        {
+            lock (LockString)
+                return Imports.FPDFPageObj_GetStrokeColor(pageObject, out r, out g, out b, out a);
+        }
+
+        public static bool FPDFPageObj_GetStrokeWidth(IntPtr pageObject, out float width)
+        {
+            lock (LockString)
+                return Imports.FPDFPageObj_GetStrokeWidth(pageObject, out width);
         }
 
         public static bool FPDFPage_GenerateContent(IntPtr page)
@@ -866,6 +952,9 @@ namespace PdfiumViewer
             public static extern void FPDFText_GetCharBox(IntPtr page, int index, out double left, out double right, out double bottom, out double top);
 
             [DllImport("pdfium.dll")]
+            public static extern void FPDFText_GetCharOrigin(IntPtr page, int index, out double x, out double y);
+
+            [DllImport("pdfium.dll")]
             public static extern int FPDFText_GetCharIndexAtPos(IntPtr page, double x, double y, double xTolerance, double yTolerance);
 
             [DllImport("pdfium.dll")]
@@ -890,7 +979,7 @@ namespace PdfiumViewer
             public static extern uint FPDFDest_GetDestPageIndex(IntPtr document, IntPtr dest);
 
             [DllImport("pdfium.dll")]
-            public static extern bool FPDFLink_GetAnnotRect(IntPtr linkAnnot, FS_RECTF rect);
+            public static extern bool FPDFLink_GetAnnotRect(IntPtr linkAnnot, out FS_RECTF rect);
 
             [DllImport("pdfium.dll")]
             public static extern void FPDF_DeviceToPage(IntPtr page, int start_x, int start_y, int size_x, int size_y, int rotate, int device_x, int device_y, out double page_x, out double page_y);
@@ -936,28 +1025,40 @@ namespace PdfiumViewer
             public static extern bool FPDFText_GetStrokeColor(IntPtr page, int index, out uint R, out uint G, out uint B, out uint A);
 
             [DllImport("pdfium.dll")]
-			public static extern int FPDFPage_GetAnnotCount(IntPtr page);
-			
-			[DllImport("pdfium.dll")]
-			public static extern IntPtr FPDFPage_GetAnnot(IntPtr page, int index);
+            public static extern bool FPDFText_GetLooseCharBox(IntPtr page, int index, out FS_RECTF rect);
+
+            [DllImport("pdfium.dll")]
+            public static extern int FPDFPage_GetAnnotCount(IntPtr page);
+            
+            [DllImport("pdfium.dll")]
+            public static extern IntPtr FPDFPage_GetAnnot(IntPtr page, int index);
 
             [DllImport("pdfium.dll")]
             public static extern void FPDFPage_CloseAnnot(IntPtr annot);
 
             [DllImport("pdfium.dll")]
-			public static extern FPDF_ANNOTATION_SUBTYPE FPDFAnnot_GetSubtype(IntPtr annot);
-			
-			[DllImport("pdfium.dll", CharSet = CharSet.Unicode)]
-			public static extern uint FPDFAnnot_GetStringValue(IntPtr annot, [MarshalAs(UnmanagedType.LPStr)]string key, StringBuilder buffer, uint buflen);
+            public static extern FPDF_ANNOTATION_SUBTYPE FPDFAnnot_GetSubtype(IntPtr annot);
+            
+            [DllImport("pdfium.dll", CharSet = CharSet.Unicode)]
+            public static extern uint FPDFAnnot_GetStringValue(IntPtr annot, [MarshalAs(UnmanagedType.LPStr)]string key, StringBuilder buffer, uint buflen);
 
-			[DllImport("pdfium.dll")]
-			public static extern bool FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out uint R, out uint G, out uint B, out uint A);
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out uint R, out uint G, out uint B, out uint A);
 
-			[DllImport("pdfium.dll")]
-			public static extern UIntPtr FPDFAnnot_CountAttachmentPoints(IntPtr annot);
-			
-			[DllImport("pdfium.dll")]
-			public static extern bool FPDFAnnot_GetAttachmentPoints(IntPtr annot, UIntPtr quad_index, out FS_QUADPOINTSF quad_points);
+            [DllImport("pdfium.dll")]
+            public static extern UIntPtr FPDFAnnot_CountAttachmentPoints(IntPtr annot);
+            
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFAnnot_GetAttachmentPoints(IntPtr annot, UIntPtr quad_index, out FS_QUADPOINTSF quad_points);
+
+            [DllImport("pdfium.dll")]
+            public static extern int FPDFPath_CountSegments(IntPtr pathObj);
+
+            [DllImport("pdfium.dll")]
+            public static extern IntPtr FPDFPath_GetPathSegment(IntPtr pathObj, int index);
+
+            [DllImport("pdfium.dll")]
+            public static extern FPDF_SEGMENT FPDFPathSegment_GetType(IntPtr pathSegment);
             #endregion
 
             #region Save/Edit APIs
@@ -987,6 +1088,30 @@ namespace PdfiumViewer
 
             [DllImport("pdfium.dll")]
             public static extern void FPDFPage_SetRotation(IntPtr page, int rotate);
+
+            [DllImport("pdfium.dll")]
+            public static extern int FPDFPage_CountObjects(IntPtr page);
+            
+            [DllImport("pdfium.dll")]
+            public static extern IntPtr FPDFPage_GetObject(IntPtr page, int index);
+            
+            [DllImport("pdfium.dll")]
+            public static extern int FPDFPageObj_GetType(IntPtr page_object);
+            
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFPageObj_GetBounds(IntPtr page_object,
+                out float left, out float bottom, out float right, out float top);
+            
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFPageObj_GetFillColor(IntPtr page_object,
+                out uint R, out uint G, out uint B, out uint A);
+            
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFPageObj_GetStrokeColor(IntPtr page_object,
+                out uint R, out uint G, out uint B, out uint A);
+
+            [DllImport("pdfium.dll")]
+            public static extern bool FPDFPageObj_GetStrokeWidth(IntPtr page, out float width);
 
             [DllImport("pdfium.dll")]
             public static extern IntPtr FPDF_CreateNewDocument();
@@ -1139,7 +1264,7 @@ namespace PdfiumViewer
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public class FS_RECTF
+        public struct FS_RECTF
         {
             public float left;
             public float top;
@@ -1162,13 +1287,13 @@ namespace PdfiumViewer
 
         public enum FPDF_ERR : uint
         {
-            FPDF_ERR_SUCCESS = 0,		// No error.
-            FPDF_ERR_UNKNOWN = 1,		// Unknown error.
-            FPDF_ERR_FILE = 2,		// File not found or could not be opened.
-            FPDF_ERR_FORMAT = 3,		// File not in PDF format or corrupted.
-            FPDF_ERR_PASSWORD = 4,		// Password required or incorrect password.
-            FPDF_ERR_SECURITY = 5,		// Unsupported security scheme.
-            FPDF_ERR_PAGE = 6		// Page not found or content error.
+            FPDF_ERR_SUCCESS = 0,       // No error.
+            FPDF_ERR_UNKNOWN = 1,       // Unknown error.
+            FPDF_ERR_FILE = 2,          // File not found or could not be opened.
+            FPDF_ERR_FORMAT = 3,        // File not in PDF format or corrupted.
+            FPDF_ERR_PASSWORD = 4,      // Password required or incorrect password.
+            FPDF_ERR_SECURITY = 5,      // Unsupported security scheme.
+            FPDF_ERR_PAGE = 6           // Page not found or content error.
         }
 
         #region Experimental APIs
@@ -1219,6 +1344,24 @@ namespace PdfiumViewer
             FPDF_INCREMENTAL = 1,
             FPDF_NO_INCREMENTAL = 2,
             FPDF_REMOVE_SECURITY = 3
+        }
+
+        public enum FPDF_PAGEOBJ
+        {
+            UNKNOWN = 0,
+            TEXT = 1,
+            PATH = 2,
+            IMAGE = 3,
+            SHADING = 4,
+            FORMXOBJECT = 5
+        }
+
+        public enum FPDF_SEGMENT
+        {
+            UNKNOWN = -1,
+            LINETO = 0,
+            BEZIERTO = 1,
+            MOVETO = 2
         }
 
         [StructLayout(LayoutKind.Sequential)]
