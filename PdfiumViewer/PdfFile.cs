@@ -15,6 +15,7 @@ namespace PdfiumViewer
     internal class PdfFile : IDisposable
     {
         private static readonly Encoding FPDFEncoding = new UnicodeEncoding(false, false, false);
+        private const int MaxCachedPages = 6;
 
         private IntPtr _document;
         private IntPtr _form;
@@ -24,6 +25,8 @@ namespace PdfiumViewer
         private readonly int _id;
         private Stream _stream;
         private List<PageData> _pageData = null;
+        private Dictionary<int, List<IntPtr>> _pathObjectCache = new Dictionary<int, List<IntPtr>>();  // Cache (up to MaxCachedPages)
+        private Queue<int> _cachePageOrder = new Queue<int>();  // Track the insertion order of the cache
 
         public PdfFile(Stream stream, string password)
         {
@@ -762,13 +765,13 @@ namespace PdfiumViewer
             return new PdfTextStyle(pageNumber, index, fillColor, strokeColor, isUnderlined, isStrikethrough, isHighlighted, IsSquiggly, annotationColor);
         }
 
-        private static void CheckAnnotBounds(PageData pageData,
-                                               RectangleF charBounds,
-                                               ref bool isUnderlined,
-                                               ref bool isStrikethrough,
-                                               ref bool isHighlighted,
-                                               ref bool isSquiggly,
-                                               ref Color annotationColor)
+        private void CheckAnnotBounds(PageData pageData,
+                                        RectangleF charBounds,
+                                        ref bool isUnderlined,
+                                        ref bool isStrikethrough,
+                                        ref bool isHighlighted,
+                                        ref bool isSquiggly,
+                                        ref Color annotationColor)
         {
             // Detect underline, strikethrough, and highlight annotations
             int annotCount = NativeMethods.FPDFPage_GetAnnotCount(pageData.Page);
@@ -820,25 +823,20 @@ namespace PdfiumViewer
             }
         }
 
-        private static void CheckPageObjBounds(PageData pageData,
-                                               RectangleF charBounds,
-                                               float originY,
-                                               ref bool isUnderlined,
-                                               ref bool isStrikethrough,
-                                               ref bool isHighlighted,
-                                               ref bool isSquiggly,
-                                               ref Color annotationColor)
+        private void CheckPageObjBounds(PageData pageData,
+                                        RectangleF charBounds,
+                                        float originY,
+                                        ref bool isUnderlined,
+                                        ref bool isStrikethrough,
+                                        ref bool isHighlighted,
+                                        ref bool isSquiggly,
+                                        ref Color annotationColor)
         {
-            int objCount = NativeMethods.FPDFPage_CountObjects(pageData.Page);
-            for (int i = 0; i < objCount; i++)
+            int pageNumber = pageData.PageNumber;
+            List<IntPtr> pathObjects = GetCachedPathObjects(pageData);
+
+            foreach (IntPtr obj in pathObjects)
             {
-                IntPtr obj = NativeMethods.FPDFPage_GetObject(pageData.Page, i);
-                if (obj == IntPtr.Zero)
-                    continue;
-
-                if (NativeMethods.FPDFPageObj_GetType(obj) != FPDF_PAGEOBJ.PATH)
-                    continue;
-
                 if (!TryGetObjBounds(obj, out RectangleF objBounds))
                     continue;
 
@@ -851,6 +849,44 @@ namespace PdfiumViewer
                                               ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref isSquiggly,
                                               ref annotationColor);
             }
+        }
+
+        private List<IntPtr> GetCachedPathObjects(PageData pageData)
+        {
+            int pageNumber = pageData.PageNumber;
+
+            // Check if the requested page exists in the cache
+            if (_pathObjectCache.ContainsKey(pageNumber))
+            {
+                return _pathObjectCache[pageNumber];
+            }
+
+            // If the cache already contains MaxCachedPages pages, remove the oldest entry
+            if (_pathObjectCache.Count >= MaxCachedPages)
+            {
+                // Remove the first-added page (FIFO order)）
+                int oldestPageNumber = _cachePageOrder.Dequeue();
+                _pathObjectCache.Remove(oldestPageNumber);
+            }
+
+            // Add the PATH object for the new page to the cache
+            List<IntPtr> pathObjects = new List<IntPtr>();
+            int objCount = NativeMethods.FPDFPage_CountObjects(pageData.Page);
+            for (int i = 0; i < objCount; i++)
+            {
+                IntPtr obj = NativeMethods.FPDFPage_GetObject(pageData.Page, i);
+                if (obj == IntPtr.Zero)
+                    continue;
+
+                if (NativeMethods.FPDFPageObj_GetType(obj) != FPDF_PAGEOBJ.PATH)
+                    continue;
+
+                pathObjects.Add(obj);
+            }
+
+            _pathObjectCache[pageNumber] = pathObjects;
+            _cachePageOrder.Enqueue(pageNumber);		  // Record the insertion order
+            return pathObjects;
         }
 
         private static bool TryGetObjBounds(IntPtr pageObject, out RectangleF bounds)
@@ -1033,6 +1069,8 @@ namespace PdfiumViewer
                     }
                 }
 
+                _pathObjectCache.Clear();
+
                 if (_form != IntPtr.Zero)
                 {
                     NativeMethods.FORM_DoDocumentAAction(_form, NativeMethods.FPDFDOC_AACTION.WC);
@@ -1072,9 +1110,12 @@ namespace PdfiumViewer
 
             public double Height { get; private set; }
 
+            public int PageNumber { get; private set; }
+
             public PageData(IntPtr document, IntPtr form, int pageNumber)
             {
                 _form = form;
+                PageNumber = pageNumber;
 
                 Page = NativeMethods.FPDF_LoadPage(document, pageNumber);
                 TextPage = NativeMethods.FPDFText_LoadPage(Page);
