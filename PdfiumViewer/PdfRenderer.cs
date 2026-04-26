@@ -48,8 +48,8 @@ namespace PdfiumViewer
         private RectangleF _compareBounds = Rectangle.Empty;
         private Point zoomLocation;
         private PdfPoint zoomPdfLocation;
+        private bool _markerFlashVisible = true;
         private int tempFlashTextAlpha = 0;
-
         public int FlashTextAlpha = 0;
 
         /// <summary>
@@ -974,7 +974,10 @@ namespace PdfiumViewer
                         DrawTextOutline(e.Graphics, _flashTextSpans, tempFlashTextAlpha);
                     }
 
-                    DrawMarkers(e.Graphics, page);
+                    if (_markerFlashVisible)
+                    {
+                        DrawMarkers(e.Graphics, page);
+                    }
 
                     DrawCompareBounds(e.Graphics, page);
 
@@ -1863,6 +1866,18 @@ namespace PdfiumViewer
                 FlashTextAlpha = 0;         // Stop flash animation.
             }
             //Console.WriteLine("FlashTextAlpha={0}, tempFlashTextAlpha={1}", FlashTextAlpha, tempFlashTextAlpha);
+            Invalidate();
+        }
+
+        public void SetMarkerVisible(bool visible)
+        {
+            _markerFlashVisible = visible;
+            Invalidate();
+        }
+
+        public void ToggleMarkerVisible()
+        {
+            _markerFlashVisible = !_markerFlashVisible;
             Invalidate();
         }
 
