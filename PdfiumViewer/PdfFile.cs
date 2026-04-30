@@ -300,7 +300,26 @@ namespace PdfiumViewer
                 {
                     NativeMethods.FPDFText_GetRect(pageData.TextPage, i, out var left, out var top, out var right, out var bottom);
 
-                    RectangleF bounds = new RectangleF((float)left, (float)top, (float)(right - left), (float)(bottom - top));
+                    double looseTop = top;
+                    double looseBottom = bottom;
+                    //Console.WriteLine($"TOP:{top} BTM:{bottom}, LEFT:{left} RIGHT:{right}  with Length{textSpan.Length}");
+
+                    for (int charIndex = textSpan.Offset; charIndex < textSpan.Offset + textSpan.Length; charIndex++)
+                    {
+                        // Get loose boxes for each character.
+                        if (NativeMethods.FPDFText_GetLooseCharBox(pageData.TextPage, charIndex, out var looseRect))
+                        {
+                            if (looseRect.bottom > top || looseRect.top < bottom)
+                                continue;
+
+                            // Use max top and min bottom if in range.
+                            looseTop = Math.Max(looseTop, looseRect.top);
+                            looseBottom = Math.Min(looseBottom, looseRect.bottom);
+                            //Console.WriteLine($"{charIndex}: TOP:{looseTop} {looseRect.top-looseTop}, BTM:{looseBottom} {looseRect.bottom- looseBottom} / {looseRect.left}");
+                        }
+                    }
+    
+                    RectangleF bounds = new RectangleF((float)left, (float)looseTop, (float)(right - left), (float)(looseBottom - looseTop));
 
                     result.Add(new PdfRectangle(textSpan.Page, bounds));
                 }
