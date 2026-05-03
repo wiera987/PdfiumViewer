@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using static PdfiumViewer.NativeMethods;
 
 namespace PdfiumViewer
 {
@@ -36,9 +37,10 @@ namespace PdfiumViewer
         public bool IsStrikethrough { get; set; }
         public bool IsHighlighted { get; set; }
         public bool IsSquiggly { get; set; }
-        //public Color AnnotFillColor { get; set; }
-        //public Color AnnotStrokeColor { get; set; }
-        public Color AnnotationColor { get; set; }
+        public Color UnderlineColor { get; set; }
+        public Color StrikeoutColor { get; set; }
+        public Color HighlightColor { get; set; }
+        public Color SquigglyColor { get; set; }
 
         public PdfTextStyle(
             int pageIndex,
@@ -47,13 +49,14 @@ namespace PdfiumViewer
             //float fontSize,
             Color fillColor,
             Color strokeColor,
-            bool isUnderlined,
-            bool isStrikethrough,
-            bool isHighlighted,
-            bool isSquiggly,
-            //Color annotationColor,
-            //Color annotStrokeColor
-            Color annotationColor)
+            bool isUnderlined = false,
+            bool isStrikethrough = false,
+            bool isHighlighted = false,
+            bool isSquiggly = false,
+            Color underlineColor = default(Color),
+            Color strikeoutColor = default(Color),
+            Color highlightColor = default(Color),
+            Color squigglyColor = default(Color))
         {
             PageIndex = pageIndex;
             CharIndex = charIndex;
@@ -65,9 +68,30 @@ namespace PdfiumViewer
             IsStrikethrough = isStrikethrough;
             IsHighlighted = isHighlighted;
             IsSquiggly = isSquiggly;
-            //AnnotStrokeColor = annotationColor;
-            //AnnotStrokeColor = annotStrokeColor;
-            AnnotationColor = annotationColor;
+            UnderlineColor = underlineColor;
+            StrikeoutColor = strikeoutColor;
+            HighlightColor = highlightColor;
+            SquigglyColor = squigglyColor;
+        }
+
+        internal void SetColor(FPDF_ANNOTATION_SUBTYPE subtype,
+                                Color color)
+        {
+            switch (subtype)
+            {
+                case FPDF_ANNOTATION_SUBTYPE.UNDERLINE:
+                    UnderlineColor = color;
+                    break;
+                case FPDF_ANNOTATION_SUBTYPE.STRIKEOUT:
+                    StrikeoutColor = color;
+                    break;
+                case FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT:
+                    HighlightColor = color;
+                    break;
+                case FPDF_ANNOTATION_SUBTYPE.SQUIGGLY:
+                    SquigglyColor = color;
+                    break;
+            }
         }
 
         /// <summary>
@@ -90,12 +114,10 @@ namespace PdfiumViewer
                 return false;
             }
             if (((flag & PdfTextStyleFlags.StrokeColor) != 0) && (style1.StrokeColor != style2.StrokeColor))
-                if (style1.StrokeColor != style2.StrokeColor)
             {
                 return false;
             }
             if (((flag & PdfTextStyleFlags.Underline) != 0) && (style1.IsUnderlined != style2.IsUnderlined))
-                if (style1.IsUnderlined != style2.IsUnderlined)
             {
                 return false;
             }
@@ -111,10 +133,14 @@ namespace PdfiumViewer
             {
                 return false;
             }
-            //if (((flag & PdfTextStyleFlags.AnnotationColor) != 0) && (style1.AnnotationColor != style2.AnnotationColor))
-            //{
-            //    return false;
-            //}
+            if (((flag & PdfTextStyleFlags.AnnotationColor) != 0)
+                && ((style1.UnderlineColor != style2.UnderlineColor)
+                    || (style1.StrikeoutColor != style2.StrikeoutColor)
+                    || (style1.HighlightColor != style2.HighlightColor)
+                    || (style1.SquigglyColor != style2.SquigglyColor)))
+            {
+                return false;
+            }
 
             return true;
         }

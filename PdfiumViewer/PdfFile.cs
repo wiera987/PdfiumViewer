@@ -725,13 +725,9 @@ namespace PdfiumViewer
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            bool isUnderlined = false;
-            bool isStrikethrough = false;
-            bool isHighlighted = false;
-            bool IsSquiggly = false;
             Color fillColor = Color.Empty;
             Color strokeColor = Color.Empty;
-            Color annotationColor = Color.Empty;
+            PdfTextStyle textStyle = null;
 
             var pageData = GetPageData(_document, _form, pageNumber);
             {
@@ -777,79 +773,161 @@ namespace PdfiumViewer
                 );
                 float originY = (float)y;
 
-                CheckAnnotBounds(pageData, charBounds, ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref IsSquiggly, ref annotationColor);
-                CheckPageObjBounds(pageData, looseBounds, originY, ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref IsSquiggly, ref annotationColor);
+                textStyle = new PdfTextStyle(pageNumber, index, fillColor, strokeColor);
+
+                CheckAnnotBounds(pageData, charBounds, ref textStyle);
+                CheckPageObjBounds(pageData, looseBounds, originY, ref textStyle);
             }
 
-            return new PdfTextStyle(pageNumber, index, fillColor, strokeColor, isUnderlined, isStrikethrough, isHighlighted, IsSquiggly, annotationColor);
+            return textStyle;
         }
 
         private void CheckAnnotBounds(PageData pageData,
                                         RectangleF charBounds,
-                                        ref bool isUnderlined,
-                                        ref bool isStrikethrough,
-                                        ref bool isHighlighted,
-                                        ref bool isSquiggly,
-                                        ref Color annotationColor)
+                                        ref PdfTextStyle textStyle)
         {
             // Detect underline, strikethrough, and highlight annotations
             int annotCount = NativeMethods.FPDFPage_GetAnnotCount(pageData.Page);
+
             for (int i = 0; i < annotCount; i++)
             {
                 IntPtr annotHandle = NativeMethods.FPDFPage_GetAnnot(pageData.Page, i);
                 if (annotHandle == IntPtr.Zero)
                     continue;
 
-                var subtype = NativeMethods.FPDFAnnot_GetSubtype(annotHandle);
-
-                // Check attachment points if available
-                int attachmentPointCount = (int)NativeMethods.FPDFAnnot_CountAttachmentPoints(annotHandle);
-                for (int j = 0; j < attachmentPointCount; j++)
+                try
                 {
-                    NativeMethods.FPDFAnnot_GetAttachmentPoints(annotHandle, (UIntPtr)j, out var quadPoints);
+                    var subtype = NativeMethods.FPDFAnnot_GetSubtype(annotHandle);
 
-                    RectangleF annotBounds = new RectangleF(
-                        Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
-                        Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4)),
-                        Math.Max(Math.Max(quadPoints.x1, quadPoints.x2), Math.Max(quadPoints.x3, quadPoints.x4)) - Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
-                        Math.Max(Math.Max(quadPoints.y1, quadPoints.y2), Math.Max(quadPoints.y3, quadPoints.y4)) - Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4))
-                    );
+                    // Ignore anything that is not a text‑markup annotation.
+                    bool isTargetSubtype =
+                        subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.UNDERLINE ||
+                        subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.SQUIGGLY ||
+                        subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.STRIKEOUT ||
+                        subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT;
 
-                    // Check if the character bounds intersect with the annotation bounds
-                    if (charBounds.IntersectsWith(annotBounds))
+                    if (!isTargetSubtype)
+                        continue;
+
+                    // Check attachment points if available
+                    int attachmentPointCount = (int)NativeMethods.FPDFAnnot_CountAttachmentPoints(annotHandle);
+                    if (attachmentPointCount <= 0)
+                        continue;
+
+                    for (int j = 0; j < attachmentPointCount; j++)
                     {
+                        if (!NativeMethods.FPDFAnnot_GetAttachmentPoints(annotHandle, (UIntPtr)j, out var quadPoints))
+                            continue;
+
+                        RectangleF annotBounds = new RectangleF(
+                            Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                            Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4)),
+                            Math.Max(Math.Max(quadPoints.x1, quadPoints.x2), Math.Max(quadPoints.x3, quadPoints.x4)) - Math.Min(Math.Min(quadPoints.x1, quadPoints.x2), Math.Min(quadPoints.x3, quadPoints.x4)),
+                            Math.Max(Math.Max(quadPoints.y1, quadPoints.y2), Math.Max(quadPoints.y3, quadPoints.y4)) - Math.Min(Math.Min(quadPoints.y1, quadPoints.y2), Math.Min(quadPoints.y3, quadPoints.y4))
+                        );
+
+                        // Check if the character bounds intersect with the annotation bounds
+                        if (!charBounds.IntersectsWith(annotBounds))
+                            continue;
+
                         if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.UNDERLINE)
                         {
-                            isUnderlined = true;
+                            textStyle.IsUnderlined = true;
                         }
                         else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.SQUIGGLY)
                         {
-                            isSquiggly = true;
+                            textStyle.IsSquiggly = true;
                         }
                         else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.STRIKEOUT)
                         {
-                            isStrikethrough = true;
+                            textStyle.IsStrikethrough = true;
                         }
                         else if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
                         {
-                            isHighlighted = true;
-                            NativeMethods.FPDFAnnot_GetColor(annotHandle, NativeMethods.FPDFANNOT_COLORTYPE.Color, out annotationColor);
+                            textStyle.IsHighlighted = true;
                         }
+
+                        // Retrieve the color not only for HIGHLIGHT but for any matched text‑markup annotation.
+                        // For annotations with an appearance stream, FPDFAnnot_GetColor() may fail,
+                        // so fall back to the stroke/fill color of the annotation’s page objects.
+                        TryGetAnnotationColorWithFallback(annotHandle, subtype, ref textStyle);
                     }
                 }
-
-                NativeMethods.FPDFPage_CloseAnnot(annotHandle);
+                finally
+                {
+                    NativeMethods.FPDFPage_CloseAnnot(annotHandle);
+                }
             }
+        }
+
+        private bool TryGetAnnotationColorWithFallback(IntPtr annotHandle,
+                                                       FPDF_ANNOTATION_SUBTYPE subtype,
+                                                       ref PdfTextStyle textStyle)
+        {
+            uint r, g, b, a;
+
+            if (annotHandle == IntPtr.Zero)
+                return false;
+
+            // First, try to retrieve the annotation color from the annotation dictionary.
+            if (NativeMethods.FPDFAnnot_GetColor(
+                    annotHandle,
+                    NativeMethods.FPDFANNOT_COLORTYPE.Color,
+                    out r, out g, out b, out a))
+            {
+                var color = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                textStyle.SetColor(subtype, color);
+                return true;
+            }
+
+            // If the annotation has an appearance stream defined, the above call may fail.
+            // In that case, search for the stroke or fill color within the annotation’s page objects.
+            int objectCount = NativeMethods.FPDFAnnot_GetObjectCount(annotHandle);
+            Color colorFill = Color.Empty;
+            Color colorStroke = Color.Empty;
+
+            for (int i = 0; i < objectCount; i++)
+            {
+                IntPtr pageObject = NativeMethods.FPDFAnnot_GetObject(annotHandle, i);
+                if (pageObject == IntPtr.Zero)
+                    continue;
+
+                if (NativeMethods.FPDFPageObj_GetStrokeColor(pageObject, out r, out g, out b, out a))
+                {
+                    colorStroke = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                }
+
+                if (NativeMethods.FPDFPageObj_GetFillColor(pageObject, out r, out g, out b, out a))
+                {
+                    colorFill = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                }
+
+                // Does PDFium set the highlight color in the FillColor property?
+                if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
+                {
+                    if (colorFill != Color.Empty)
+                    {
+                        textStyle.SetColor(subtype, colorFill);
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (colorStroke != Color.Empty)
+                    {
+                        textStyle.SetColor(subtype, colorStroke);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private void CheckPageObjBounds(PageData pageData,
                                         RectangleF charBounds,
                                         float originY,
-                                        ref bool isUnderlined,
-                                        ref bool isStrikethrough,
-                                        ref bool isHighlighted,
-                                        ref bool isSquiggly,
-                                        ref Color annotationColor)
+                                        ref PdfTextStyle textStyle)
         {
             int pageNumber = pageData.PageNumber;
             List<IntPtr> pathObjects = GetCachedPathObjects(pageData);
@@ -865,8 +943,7 @@ namespace PdfiumViewer
 
                 // Classification (heuristics).
                 ClassifyPathAgainstCharBounds(obj, objBounds, charBounds, originY,
-                                              ref isUnderlined, ref isStrikethrough, ref isHighlighted, ref isSquiggly,
-                                              ref annotationColor);
+                                              ref textStyle);
             }
         }
 
@@ -929,11 +1006,7 @@ namespace PdfiumViewer
                                                          RectangleF pathBounds,
                                                          RectangleF charBounds,
                                                          float originY,
-                                                         ref bool isUnderlined,
-                                                         ref bool isStrikethrough,
-                                                         ref bool isHighlighted,
-                                                         ref bool isSquiggly,
-                                                         ref Color annotationColor)
+                                                         ref PdfTextStyle textStyle)
         {
             // Thresholds (tune these for real-world PDFs).
             float charH = charBounds.Height;
@@ -960,8 +1033,9 @@ namespace PdfiumViewer
                     // Near the lower side of the glyph (allow some downward tolerance).
                     if ((pathMidY >= charBounds.Top - thinLineMax) && (pathMidY < underlineMaxY))
                     {
-                        // Underline.
-                        isUnderlined = true;
+                        // Get the color if possible.
+                        TryGetPathColor(pathObj, FPDF_ANNOTATION_SUBTYPE.UNDERLINE, ref textStyle);
+                        textStyle.IsUnderlined = true;
                         return;
                     }
                 }
@@ -972,8 +1046,9 @@ namespace PdfiumViewer
                     // Around the glyph (allow some upward tolerance).
                     if (pathBounds.Bottom <= charBounds.Bottom + thinLineMax)
                     {
-                        // Strikethrough.
-                        isStrikethrough = true;
+                        // Get the color if possible.
+                        TryGetPathColor(pathObj, FPDF_ANNOTATION_SUBTYPE.STRIKEOUT, ref textStyle);
+                        textStyle.IsStrikethrough = true;
                         return;
                     }
 
@@ -984,7 +1059,9 @@ namespace PdfiumViewer
                     // Near the lower side of the glyph (allow some downward tolerance).
                     if ((pathMidY >= charBounds.Top - squigglyMax) && (pathMidY < underlineMaxY))
                     {
-                        isSquiggly = true;
+                        // Get the color if possible.
+                        TryGetPathColor(pathObj, FPDF_ANNOTATION_SUBTYPE.SQUIGGLY, ref textStyle);
+                        textStyle.IsSquiggly = true;
                         return;
                     }
                 }
@@ -998,13 +1075,9 @@ namespace PdfiumViewer
 
                     if (covers)
                     {
-                        isHighlighted = true;
-
                         // Get the color if possible.
-                        if (TryGetPathColor(pathObj, out var c))
-                        {
-                            annotationColor = c;
-                        }
+                        TryGetPathColor(pathObj, FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT, ref textStyle);
+                        textStyle.IsHighlighted = true;
                         return;
                     }
                 }
@@ -1035,21 +1108,48 @@ namespace PdfiumViewer
             return true;
         }
 
-        private static bool TryGetPathColor(IntPtr pathObj, out Color color)
+        /// <summary>
+        /// Attempts to retrieve the stroke or fill color of a PDF path object based on its annotation subtype.
+        /// </summary>
+        /// <param name="pathObj">A handle to the PDF path object from which to retrieve the color.</param>
+        /// <param name="subtype">The subtype of the annotation, which determines the color retrieval logic.</param>
+        /// <param name="textStyle">A reference to the PdfTextStyle object that will be updated with the retrieved color.</param>
+        /// <returns>True if a color was successfully retrieved and set; otherwise, false.</returns>
+        private static bool TryGetPathColor(IntPtr pathObj,
+                                            FPDF_ANNOTATION_SUBTYPE subtype,
+                                            ref PdfTextStyle textStyle)
         {
-            color = Color.Empty;
+            uint r, g, b, a;
 
-            // Only if the binding exposes it (fpdf_edit.h defines Stroke/Fill "Get" APIs).
-            if (NativeMethods.FPDFPageObj_GetFillColor(pathObj, out uint r, out uint g, out uint b, out uint a))
-            {
-                color = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
-                return true;
-            }
+            Color colorFill = Color.Empty;
+            Color colorStroke = Color.Empty;
 
             if (NativeMethods.FPDFPageObj_GetStrokeColor(pathObj, out r, out g, out b, out a))
             {
-                color = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
-                return true;
+                colorStroke = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+            }
+
+            if (NativeMethods.FPDFPageObj_GetFillColor(pathObj, out r, out g, out b, out a))
+            {
+                colorFill = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+            }
+
+            // Does PDFium set the highlight color in the FillColor property?
+            if (subtype == NativeMethods.FPDF_ANNOTATION_SUBTYPE.HIGHLIGHT)
+            {
+                if (colorFill != Color.Empty)
+                {
+                    textStyle.SetColor(subtype, colorFill);
+                    return true;
+                }
+            }
+            else
+            {
+                if (colorStroke != Color.Empty)
+                {
+                    textStyle.SetColor(subtype, colorStroke);
+                    return true;
+                }
             }
 
             return false;

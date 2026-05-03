@@ -595,13 +595,27 @@ namespace PdfiumViewer
             }
         }
 
-        public static void FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out Color annotColor)
+        public static int FPDFAnnot_GetObjectCount(IntPtr annot)
         {
             lock (LockString)
             {
-                uint r, g, b, a;
-                Imports.FPDFAnnot_GetColor(annot, type, out r, out g, out b, out a);
-                annotColor = Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+                return Imports.FPDFAnnot_GetObjectCount(annot);
+            }
+        }
+
+        public static IntPtr FPDFAnnot_GetObject(IntPtr annot, int index)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFAnnot_GetObject(annot, index);
+            }
+        }
+
+        public static bool FPDFAnnot_GetColor(IntPtr annot, FPDFANNOT_COLORTYPE type, out uint r, out uint g, out uint b, out uint a)
+        {
+            lock (LockString)
+            {
+                return Imports.FPDFAnnot_GetColor(annot, type, out r, out g, out b, out a);
             }
         }
 
@@ -1038,7 +1052,13 @@ namespace PdfiumViewer
 
             [DllImport("pdfium.dll")]
             public static extern FPDF_ANNOTATION_SUBTYPE FPDFAnnot_GetSubtype(IntPtr annot);
+
+            [DllImport("pdfium.dll")]
+            public static extern int FPDFAnnot_GetObjectCount(IntPtr annot);
             
+            [DllImport("pdfium.dll")]
+            public static extern IntPtr FPDFAnnot_GetObject(IntPtr annot, int index);
+
             [DllImport("pdfium.dll", CharSet = CharSet.Unicode)]
             public static extern uint FPDFAnnot_GetStringValue(IntPtr annot, [MarshalAs(UnmanagedType.LPStr)]string key, StringBuilder buffer, uint buflen);
 
